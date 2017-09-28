@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  version: ""
+  title: ""
+  description: ""
+servers: []
+paths:
+  /pets:
+    get:
+      description: Returns all pets from the system that the user has access to
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/definitions/Pet'
+          description: A list of pets.
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: integer
+        required: true
+        description: Numeric ID of the user to get
+    post:
+      description: Returns all pets from the system that the user has access to
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/definitions/Pet'
+          description: Post a new pet
+      parameters: []
+      requestBody:
+        description: Pet to add to the store
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssociateDevice'
+components:
+  schemas:
+    EditableFoo:
+      type: object
+      properties:
+        string:
+          type: string
+    Foo:
+      type: object
+      properties:
+        string:
+          type: string
+    Pet:
+      type: object
+      properties:
+        int:
+          type: integer
+        pointerOfString:
+          nullable: true
+          type: string
+        pointerOfStruct:
+          nullable: true
+          $ref: '#/components/schemas/Foo'
+        pointerOfTime:
+          nullable: true
+          type: string
+        sliceofInt:
+          type: array
+          items:
+            type: integer
+        sliceofString:
+          type: array
+          items:
+            type: string
+        string:
+          type: string
+        struct:
+          $ref: '#/components/schemas/Foo'
+        time:
+          type: string
+    Signals:
+      type: array
+      items:
+        $ref: '#/components/schemas/Foo'

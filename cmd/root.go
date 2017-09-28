@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/xee/parser-openapi/docparser"
+	"gitlab.com/xee/parser-openapi/docparser"
 	yaml "gopkg.in/yaml.v2"
 )
 
