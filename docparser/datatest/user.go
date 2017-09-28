@@ -1,0 +1,81 @@
+package cmd
+
+import (
+	"time"
+)
+
+// GetUser returns a user corresponding to specified id
+// @openapi:path
+// /pets:
+//	get:
+//		description: "Returns all pets from the system that the user has access to"
+//		responses:
+//			"200":
+//				description: "A list of pets."
+//				content:
+//					application/json:
+//						schema:
+//							type: "array"
+//							items:
+//								$ref: "#/definitions/Pet"
+//		parameters:
+//			- in: path
+//				name: deviceId
+//				schema:
+//					type: integer
+//				required: true
+//				description: Numeric ID of the user to get
+func GetUser() {}
+
+// PostFoo returns a user corresponding to specified id
+// @openapi:path
+// /pets:
+//	post:
+//		description: "Returns all pets from the system that the user has access to"
+//		requestBody:
+//			description: Pet to add to the store
+//			required: true
+//			content:
+//				application/json:
+//					schema:
+//						$ref: "#/components/schemas/AssociateDevice"
+//		responses:
+//			"201":
+//				description: "Post a new pet"
+//				content:
+//					application/json:
+//						schema:
+//							type: "array"
+//							items:
+//								$ref: "#/definitions/Pet"
+func PostFoo() {}
+
+// Pet struct
+// @openapi:schema
+type Pet struct {
+	String          string     `json:"string,omitempty"`
+	Int             int        `json:"int,omitempty"`
+	PointerOfString *string    `json:"pointerOfString"`
+	SliceOfString   []string   `json:"sliceofString"`
+	SliceOfInt      []int      `json:"sliceofInt"`
+	Struct          Foo        `json:"struct"`
+	PointerOfStruct *Foo       `json:"pointerOfStruct"`
+	Time            time.Time  `json:"time"`
+	PointerOfTime   *time.Time `json:"pointerOfTime"`
+}
+
+// Foo struct
+// @openapi:schema
+type Foo struct {
+	String string `json:"string,omitempty"`
+}
+
+// Foo2 struct
+// @openapi:schema:EditableFoo
+type Foo2 struct {
+	String string `json:"string,omitempty"`
+}
+
+// Signals struct
+// @openapi:schema
+type Signals []Foo
