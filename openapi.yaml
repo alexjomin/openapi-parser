@@ -69,6 +69,7 @@ components:
         pointerOfTime:
           nullable: true
           type: string
+          format: date-time
         sliceofInt:
           type: array
           items:
@@ -83,6 +84,7 @@ components:
           $ref: '#/components/schemas/Foo'
         time:
           type: string
+          format: date-time
     Signals:
       type: array
       items:

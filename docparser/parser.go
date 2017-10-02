@@ -48,15 +48,15 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {
 	p := property{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
-		t, err := parseIdentProperty(ftpe)
+		t, format, err := parseIdentProperty(ftpe)
 		if err != nil {
 			p.Ref = "#/components/schemas/" + t
 			return &p, nil
 		}
 		p.Type = t
+		p.Format = format
 		return &p, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		// @TODO add something to handle nullable
 		t, _ := parseNamedType(gofile, ftpe.X)
 		t.Nullable = true
 		return t, nil
@@ -82,22 +82,26 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {
 }
 
 // https://swagger.io/specification/#dataTypes
-func parseIdentProperty(expr *ast.Ident) (string, error) {
+func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 	switch expr.Name {
 	case "string":
-		return expr.Name, nil
+		t = expr.Name
 	case "int":
-		return "integer", nil
+		t = "integer"
 	case "int64":
-		return "integer", nil
+		t = "integer"
 	case "int32":
-		return "integer", nil
+		t = "integer"
 	case "time":
-		return "string", nil
+		t = "string"
+		format = "date-time"
 	case "float64":
-		return "number", nil
+		t = "number"
 	case "bool":
-		return "boolean", nil
+		t = "boolean"
+	default:
+		t = expr.Name
+		err = fmt.Errorf("Can't set the type %s", expr.Name)
 	}
-	return expr.Name, fmt.Errorf("Can't set the type %s", expr.Name)
+	return t, format, err
 }

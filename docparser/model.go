@@ -62,6 +62,7 @@ type property struct {
 	Nullable bool              `yaml:"nullable,omitempty"`
 	Type     string            `yaml:",omitempty"`
 	Items    map[string]string `yaml:",omitempty"`
+	Format   string            `yaml:"format,omitempty"`
 	Ref      string            `yaml:"$ref,omitempty"`
 }
 
