@@ -21,27 +21,36 @@ func parseFile(path string) (*ast.File, error) {
 	return parser.ParseFile(fset, "", data, parser.ParseComments)
 }
 
-func parseJSONTag(field *ast.Field) (name string, ignore bool, err error) {
+func parseJSONTag(field *ast.Field) (name string, ignore bool, required bool, err error) {
 	if len(field.Names) > 0 {
 		name = field.Names[0].Name
 	}
 	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
 		tv, err := strconv.Unquote(field.Tag.Value)
 		if err != nil {
-			return name, false, err
+			return name, false, false, err
 		}
 
 		if strings.TrimSpace(tv) != "" {
 			st := reflect.StructTag(tv)
 			jsonName := strings.Split(st.Get("json"), ",")[0]
 			if jsonName == "-" {
-				return name, true, nil
+				return name, true, false, nil
 			} else if jsonName != "" {
-				return jsonName, false, nil
+				required := false
+				// https://github.com/go-playground/validator
+				// check if validate attr is active
+				validateData := strings.Split(st.Get("validate"), ",")
+				for _, v := range validateData {
+					if v == "required" {
+						required = true
+					}
+				}
+				return jsonName, false, required, nil
 			}
 		}
 	}
-	return name, false, nil
+	return name, false, false, nil
 }
 
 func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {

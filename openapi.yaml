@@ -15,7 +15,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/definitions/Pet'
+                  $ref: '#/components/schemas/Pet'
           description: A list of pets.
       parameters:
       - in: path
@@ -33,7 +33,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/definitions/Pet'
+                  $ref: '#/components/schemas/Pet'
           description: Post a new pet
       parameters: []
       requestBody:
@@ -42,7 +42,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssociateDevice'
+              $ref: '#/components/schemas/Pet'
 components:
   schemas:
     EditableFoo:
@@ -57,6 +57,8 @@ components:
           type: string
     Pet:
       type: object
+      required:
+      - string
       properties:
         int:
           type: integer

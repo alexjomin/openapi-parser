@@ -216,11 +216,16 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 					for _, fld := range tpe.Fields.List {
 						if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
-							jsonname, ignore, _ := parseJSONTag(fld)
+							jsonname, ignore, required, _ := parseJSONTag(fld)
 							if ignore {
 								continue
 							}
 							p, err := parseNamedType(f, fld.Type)
+
+							if required {
+								e.Required = append(e.Required, jsonname)
+							}
+
 							if err != nil {
 								logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
 								continue

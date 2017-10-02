@@ -17,7 +17,7 @@ import (
 //						schema:
 //							type: "array"
 //							items:
-//								$ref: "#/definitions/Pet"
+//								$ref: "#/components/schemas/Pet"
 //		parameters:
 //			- in: path
 //				name: deviceId
@@ -38,7 +38,7 @@ func GetUser() {}
 //			content:
 //				application/json:
 //					schema:
-//						$ref: "#/components/schemas/AssociateDevice"
+//						$ref: "#/components/schemas/Pet"
 //		responses:
 //			"201":
 //				description: "Post a new pet"
@@ -47,13 +47,13 @@ func GetUser() {}
 //						schema:
 //							type: "array"
 //							items:
-//								$ref: "#/definitions/Pet"
+//								$ref: "#/components/schemas/Pet"
 func PostFoo() {}
 
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	String          string     `json:"string,omitempty"`
+	String          string     `json:"string,omitempty" validate:"required"`
 	Int             int        `json:"int,omitempty"`
 	PointerOfString *string    `json:"pointerOfString"`
 	SliceOfString   []string   `json:"sliceofString"`
