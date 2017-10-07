@@ -59,6 +59,7 @@ type Pet struct {
 	SliceOfString   []string   `json:"sliceofString"`
 	SliceOfInt      []int      `json:"sliceofInt"`
 	Struct          Foo        `json:"struct"`
+	SliceOfStruct   []Foo      `json:"sliceOfStruct"`
 	PointerOfStruct *Foo       `json:"pointerOfStruct"`
 	Time            time.Time  `json:"time"`
 	PointerOfTime   *time.Time `json:"pointerOfTime"`

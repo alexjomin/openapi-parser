@@ -73,7 +73,12 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {
 		cp, _ := parseNamedType(gofile, ftpe.Elt)
 		p.Type = "array"
 		p.Items = map[string]string{}
-		p.Items["type"] = cp.Type
+		if cp.Type != "" {
+			p.Items["type"] = cp.Type
+		}
+		if cp.Ref != "" {
+			p.Items["$ref"] = cp.Ref
+		}
 		return &p, nil
 	case *ast.StructType:
 		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)

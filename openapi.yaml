@@ -72,6 +72,10 @@ components:
           nullable: true
           type: string
           format: date-time
+        sliceOfStruct:
+          type: array
+          items:
+            $ref: '#/components/schemas/Foo'
         sliceofInt:
           type: array
           items:
