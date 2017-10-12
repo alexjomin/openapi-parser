@@ -90,7 +90,7 @@ func Execute() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&output, "output", "openapi.yaml", "The output file")
-	RootCmd.PersistentFlags().StringVar(&pathsDir, "paths", "", "The Handlers to parse")
-	RootCmd.PersistentFlags().StringVar(&schemasDir, "schemas", "", "The Definitions struct to parse")
+	RootCmd.Flags().StringVar(&output, "output", "openapi.yaml", "The output file")
+	RootCmd.Flags().StringVar(&pathsDir, "paths", "", "The Handlers to parse")
+	RootCmd.Flags().StringVar(&schemasDir, "schemas", "", "The Definitions struct to parse")
 }

@@ -266,3 +266,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 		}
 	}
 }
+
+func (spec *openAPI) AddAction(path, verb string, a action) {
+	if _, ok := spec.Paths[path]; !ok {
+		spec.Paths[path] = make(map[string]action)
+	}
+	spec.Paths[path][verb] = a
+}
