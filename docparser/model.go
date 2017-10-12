@@ -76,6 +76,7 @@ type path map[string]action
 type action struct {
 	Description string
 	Responses   map[string]response
+	Tags        []string `yaml:",omitempty"`
 	Parameters  []parameter
 	RequestBody requestBody `yaml:"requestBody,omitempty"`
 }

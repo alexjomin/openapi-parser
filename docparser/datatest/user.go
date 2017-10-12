@@ -9,6 +9,8 @@ import (
 // /pets:
 //	get:
 //		description: "Returns all pets from the system that the user has access to"
+//		tags:
+//			- pet
 //		responses:
 //			"200":
 //				description: "A list of pets."

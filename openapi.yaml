@@ -17,6 +17,8 @@ paths:
                 items:
                   $ref: '#/components/schemas/Pet'
           description: A list of pets.
+      tags:
+      - pet
       parameters:
       - in: path
         name: deviceId
