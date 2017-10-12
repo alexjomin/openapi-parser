@@ -74,6 +74,7 @@ type items struct {
 type path map[string]action
 
 type action struct {
+	Summary     string `yaml:",omitempty"`
 	Description string
 	Responses   map[string]response
 	Tags        []string `yaml:",omitempty"`
