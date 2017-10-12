@@ -18,9 +18,15 @@ var (
 type openAPI struct {
 	Openapi    string
 	Info       info
-	Servers    []string
+	Servers    []server
 	Paths      map[string]path
+	Tags       []tag `yaml:"tags,omitempty"`
 	Components Components
+}
+
+type server struct {
+	URL         string `yaml:"url"`
+	Description string `yame:"description"`
 }
 
 func NewOpenAPI() openAPI {
@@ -40,8 +46,14 @@ type info struct {
 	Version     string
 	Title       string
 	Description string
+	XLogo       map[string]string `yaml:"x-logo,omitempty"`
 	Contact     map[string]string `yaml:",omitempty"`
 	Licence     map[string]string `yaml:",omitempty"`
+}
+
+type tag struct {
+	Name        string
+	Description string
 }
 
 type entity struct {
