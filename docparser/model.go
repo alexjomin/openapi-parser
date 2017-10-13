@@ -111,6 +111,12 @@ type requestBody struct {
 type response struct {
 	Content     map[string]content
 	Description string
+	Headers     map[string]header
+}
+
+type header struct {
+	Description string   `yaml:",omitempty"`
+	Schema      property `yaml:",omitempty"`
 }
 
 type content struct {

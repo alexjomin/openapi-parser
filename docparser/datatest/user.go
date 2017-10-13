@@ -20,6 +20,13 @@ import (
 //							type: "array"
 //							items:
 //								$ref: "#/components/schemas/Pet"
+//			"302":
+//				description: "Trip Signals Redirection"
+//				headers:
+//					Location:
+//						description: The url to the signal API
+//						schema:
+//							type: string
 //		parameters:
 //			- in: path
 //				name: deviceId
