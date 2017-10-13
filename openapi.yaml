@@ -72,6 +72,8 @@ components:
       required:
       - string
       properties:
+        id:
+          type: string
         int:
           type: integer
         pointerOfString:

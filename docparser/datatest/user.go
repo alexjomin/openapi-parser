@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 // GetUser returns a user corresponding to specified id
@@ -62,16 +64,17 @@ func PostFoo() {}
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	String          string     `json:"string,omitempty" validate:"required"`
-	Int             int        `json:"int,omitempty"`
-	PointerOfString *string    `json:"pointerOfString"`
-	SliceOfString   []string   `json:"sliceofString"`
-	SliceOfInt      []int      `json:"sliceofInt"`
-	Struct          Foo        `json:"struct"`
-	SliceOfStruct   []Foo      `json:"sliceOfStruct"`
-	PointerOfStruct *Foo       `json:"pointerOfStruct"`
-	Time            time.Time  `json:"time"`
-	PointerOfTime   *time.Time `json:"pointerOfTime"`
+	ID              bson.ObjectId `json:"id"`
+	String          string        `json:"string,omitempty" validate:"required"`
+	Int             int           `json:"int,omitempty"`
+	PointerOfString *string       `json:"pointerOfString"`
+	SliceOfString   []string      `json:"sliceofString"`
+	SliceOfInt      []int         `json:"sliceofInt"`
+	Struct          Foo           `json:"struct"`
+	SliceOfStruct   []Foo         `json:"sliceOfStruct"`
+	PointerOfStruct *Foo          `json:"pointerOfStruct"`
+	Time            time.Time     `json:"time"`
+	PointerOfTime   *time.Time    `json:"pointerOfTime"`
 }
 
 // Foo struct

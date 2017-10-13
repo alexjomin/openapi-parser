@@ -99,7 +99,9 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {
 func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 	switch expr.Name {
 	case "string":
-		t = expr.Name
+		t = "string"
+	case "bson":
+		t = "string"
 	case "int":
 		t = "integer"
 	case "int64":
