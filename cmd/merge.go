@@ -3,6 +3,7 @@ package cmd
 import (
 	"io/ioutil"
 	"log"
+	"reflect"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -39,6 +40,9 @@ var mergeCmd = &cobra.Command{
 		if err != nil {
 			logrus.Fatal(err)
 		}
+
+		logrus.Warn("Merging Files")
+
 		for _, lf := range files {
 			if !strings.HasSuffix(lf.Name(), ".yaml") {
 				continue
@@ -63,7 +67,19 @@ var mergeCmd = &cobra.Command{
 			}
 
 			for k, v := range spec.Components.Schemas {
+				s, ok := main.Components.Schemas[k]
+				if ok {
+					result := reflect.DeepEqual(s, v)
+					if !result {
+						logrus.
+							WithField("schema", k).
+							WithField("file", lf.Name()).
+							Error("Schema already exists and different !")
+					}
+					continue
+				}
 				main.Components.Schemas[k] = v
+				logrus.WithField("schema", k).Info("Adding Schema")
 			}
 
 		}
