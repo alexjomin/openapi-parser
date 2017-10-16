@@ -36,6 +36,10 @@ import (
 //					type: integer
 //				required: true
 //				description: Numeric ID of the user to get
+//		security:
+//			- petstore_auth:
+//				- write:pets
+//				- read:pets
 func GetUser() {}
 
 // PostFoo returns a user corresponding to specified id

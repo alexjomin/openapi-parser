@@ -39,7 +39,19 @@ func NewOpenAPI() openAPI {
 }
 
 type Components struct {
-	Schemas map[string]entity
+	Schemas         map[string]entity
+	SecuritySchemes map[string]securitySchemes `yaml:"securitySchemes,omitempty"`
+}
+
+type securitySchemes struct {
+	Type  string
+	Flows map[string]flow
+}
+
+type flow struct {
+	AuthorizationURL string            `yaml:"authorizationUrl"`
+	TokenURL         string            `yaml:"tokenUrl"`
+	Scopes           map[string]string `yaml:"scopes"`
 }
 
 type info struct {
@@ -91,7 +103,8 @@ type action struct {
 	Responses   map[string]response
 	Tags        []string `yaml:",omitempty"`
 	Parameters  []parameter
-	RequestBody requestBody `yaml:"requestBody,omitempty"`
+	RequestBody requestBody           `yaml:"requestBody,omitempty"`
+	Security    []map[string][]string `yaml:",omitempty"`
 }
 
 type parameter struct {
