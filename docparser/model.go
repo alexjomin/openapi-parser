@@ -105,6 +105,7 @@ type action struct {
 	Parameters  []parameter
 	RequestBody requestBody           `yaml:"requestBody,omitempty"`
 	Security    []map[string][]string `yaml:",omitempty"`
+	Headers     map[string]header     `yaml:",omitempty"`
 }
 
 type parameter struct {
@@ -124,7 +125,7 @@ type requestBody struct {
 type response struct {
 	Content     map[string]content
 	Description string
-	Headers     map[string]header
+	Headers     map[string]header `yaml:",omitempty"`
 }
 
 type header struct {
