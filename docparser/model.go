@@ -88,6 +88,7 @@ type property struct {
 	Items    map[string]string `yaml:",omitempty"`
 	Format   string            `yaml:"format,omitempty"`
 	Ref      string            `yaml:"$ref,omitempty"`
+	Enum     []string          `yaml:",omitempty"`
 }
 
 type items struct {

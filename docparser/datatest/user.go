@@ -34,6 +34,7 @@ import (
 //				name: deviceId
 //				schema:
 //					type: integer
+//					enum: [3, 4]
 //				required: true
 //				description: Numeric ID of the user to get
 //		security:

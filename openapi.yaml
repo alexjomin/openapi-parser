@@ -17,7 +17,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Pet'
           description: A list of pets.
-          headers: {}
         "302":
           content: {}
           description: Trip Signals Redirection
@@ -33,6 +32,9 @@ paths:
         name: deviceId
         schema:
           type: integer
+          enum:
+          - "3"
+          - "4"
         required: true
         description: Numeric ID of the user to get
       security:
@@ -50,7 +52,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Pet'
           description: Post a new pet
-          headers: {}
       parameters: []
       requestBody:
         description: Pet to add to the store
