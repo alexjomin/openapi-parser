@@ -73,10 +73,16 @@ components:
         string:
           type: string
     Pet:
-      type: object
       required:
       - string
+      type: object
       properties:
+        enumTest:
+          type: string
+          enum:
+          - UNKNOWN
+          - MALE
+          - FEMALE
         id:
           type: string
         int:

@@ -80,6 +80,7 @@ type Pet struct {
 	PointerOfStruct *Foo          `json:"pointerOfStruct"`
 	Time            time.Time     `json:"time"`
 	PointerOfTime   *time.Time    `json:"pointerOfTime"`
+	EnumTest        string        `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
 }
 
 // Foo struct

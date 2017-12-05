@@ -7,9 +7,12 @@ import (
 	"go/token"
 	"io/ioutil"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var enumRegex = regexp.MustCompile(`enum=([\w ]+)`)
 
 func parseFile(path string) (*ast.File, error) {
 	data, err := ioutil.ReadFile(path) // just pass the file name
@@ -21,21 +24,31 @@ func parseFile(path string) (*ast.File, error) {
 	return parser.ParseFile(fset, "", data, parser.ParseComments)
 }
 
-func parseJSONTag(field *ast.Field) (name string, ignore bool, required bool, err error) {
+type jsonTagInfo struct {
+	name     string
+	ignore   bool
+	required bool
+	enum     []string
+}
+
+func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	if len(field.Names) > 0 {
-		name = field.Names[0].Name
+		j.name = field.Names[0].Name
 	}
 	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
 		tv, err := strconv.Unquote(field.Tag.Value)
 		if err != nil {
-			return name, false, false, err
+			return j, err
 		}
 
 		if strings.TrimSpace(tv) != "" {
 			st := reflect.StructTag(tv)
+
 			jsonName := strings.Split(st.Get("json"), ",")[0]
 			if jsonName == "-" {
-				return name, true, false, nil
+				j.ignore = true
+				j.required = false
+				return j, nil
 			} else if jsonName != "" {
 				required := false
 				// https://github.com/go-playground/validator
@@ -45,12 +58,20 @@ func parseJSONTag(field *ast.Field) (name string, ignore bool, required bool, er
 					if v == "required" {
 						required = true
 					}
+					if matches := enumRegex.FindStringSubmatch(v); len(matches) > 0 {
+						j.enum = strings.Fields(matches[1])
+					}
 				}
-				return jsonName, false, required, nil
+
+				j.name = jsonName
+				j.required = required
+				j.ignore = false
+
+				return j, nil
 			}
 		}
 	}
-	return name, false, false, nil
+	return j, nil
 }
 
 func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {

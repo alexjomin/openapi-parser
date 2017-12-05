@@ -34,12 +34,12 @@ func NewOpenAPI() openAPI {
 	spec.Openapi = "3.0.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
-	spec.Components.Schemas = make(map[string]entity)
+	spec.Components.Schemas = make(map[string]property)
 	return spec
 }
 
 type Components struct {
-	Schemas         map[string]entity
+	Schemas         map[string]property
 	SecuritySchemes map[string]securitySchemes `yaml:"securitySchemes,omitempty"`
 }
 
@@ -68,27 +68,22 @@ type tag struct {
 	Description string
 }
 
-type entity struct {
-	Type       string
-	Required   []string            `yaml:",omitempty"`
-	Items      map[string]string   `yaml:",omitempty"`
-	Properties map[string]property `yaml:",omitempty"`
-}
-
-func newEntity() entity {
-	e := entity{}
+func newEntity() property {
+	e := property{}
 	e.Properties = make(map[string]property)
 	e.Items = make(map[string]string)
 	return e
 }
 
 type property struct {
-	Nullable bool              `yaml:"nullable,omitempty"`
-	Type     string            `yaml:",omitempty"`
-	Items    map[string]string `yaml:",omitempty"`
-	Format   string            `yaml:"format,omitempty"`
-	Ref      string            `yaml:"$ref,omitempty"`
-	Enum     []string          `yaml:",omitempty"`
+	Nullable   bool                `yaml:"nullable,omitempty"`
+	Required   []string            `yaml:"required,omitempty"`
+	Type       string              `yaml:",omitempty"`
+	Items      map[string]string   `yaml:",omitempty"`
+	Format     string              `yaml:"format,omitempty"`
+	Ref        string              `yaml:"$ref,omitempty"`
+	Enum       []string            `yaml:",omitempty"`
+	Properties map[string]property `yaml:",omitempty"`
 }
 
 type items struct {
@@ -251,23 +246,29 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 					for _, fld := range tpe.Fields.List {
 						if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
-							jsonname, ignore, required, _ := parseJSONTag(fld)
-							if ignore {
+							j, err := parseJSONTag(fld)
+							if j.ignore {
 								continue
 							}
 							p, err := parseNamedType(f, fld.Type)
 
-							if required {
-								e.Required = append(e.Required, jsonname)
+							if j.required {
+								e.Required = append(e.Required, j.name)
 							}
 
 							if err != nil {
 								logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
 								continue
 							}
-							if p != nil {
-								e.Properties[jsonname] = *p
+
+							if len(j.enum) > 0 {
+								p.Enum = j.enum
 							}
+
+							if p != nil {
+								e.Properties[j.name] = *p
+							}
+
 							// @ToDO for composition
 						} else {
 							// switch t := fld.Type.(type) {
