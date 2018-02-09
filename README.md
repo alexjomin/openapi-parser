@@ -1,6 +1,6 @@
 # Parser OpenAPI
 
-Parse openAPI from go comments in handlers and struct
+Parse openAPI from go comments in handlers and structs
 
 ## Install
 
@@ -19,7 +19,7 @@ The comments use the yaml syntax of the openapi specs. Just `@openapi:path` befo
 // @openapi:path
 // /pets:
 //	get:
-//		description: "The description of the endpoing"
+//		description: "The description of the endpoint"
 //		responses:
 //			"200":
 //				description: "The description of the response"

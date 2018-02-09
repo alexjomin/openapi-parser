@@ -1,6 +1,6 @@
 package main
 
-import "gitlab.com/xee/parser-openapi/cmd"
+import "github.com/alexjomin/openapi-parser/cmd"
 
 func main() {
 	cmd.Execute()
