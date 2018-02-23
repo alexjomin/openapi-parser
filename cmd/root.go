@@ -21,7 +21,7 @@ var (
 
 // RootCmd represents the root command
 var RootCmd = &cobra.Command{
-	Use:   "root",
+	Use:   "openapi-parser",
 	Short: "OpenAPI Parser ",
 	Long:  `Parse comments in code to generate an OpenAPI documentation`,
 	Run: func(cmd *cobra.Command, args []string) {

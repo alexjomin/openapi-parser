@@ -4,8 +4,7 @@ Parse openAPI from go comments in handlers and structs
 
 ## Install
 
-+ Clone the repo
-+ `go install`
++ `go get github.com/alexjomin/openapi-parser`
 
 ## Comments
 
@@ -77,4 +76,4 @@ Flags:
 
 ### Example
 
-`parser-openapi --paths ./handler --schemas ./storage/model/exposed,./storage/model/editable`
+`openapi-parser --paths ./handler --schemas ./storage/model/exposed,./storage/model/editable`
