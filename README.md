@@ -4,8 +4,7 @@ Parse openAPI from go comments in handlers and structs
 
 ## Install
 
-+ Clone the repo
-+ `go install`
++ `go get github.com/alexjomin/openapi-parser`
 
 ## Comments
 
@@ -70,11 +69,17 @@ Usage:
   root [flags]
 
 Flags:
-      --output string    The output file (default "openapi.yaml")
-      --paths string     The Handlers to parse
-      --schemas string   The Definitions struct to parsee
+  -h, --help            help for root
+      --output string   The output file (default "openapi.yaml")
+      --path string     The Folder to parse (default ".")
 ```
 
 ### Example
 
-`parser-openapi --paths ./handler --schemas ./storage/model/exposed,./storage/model/editable`
+<<<<<<< HEAD
+`openapi-parser --paths ./handler --schemas ./storage/model/exposed,./storage/model/editable`
+=======
+`parser-openapi`
+
+`parser-openapi --path /my/path my-openapi.yaml`
+>>>>>>> wip

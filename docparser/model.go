@@ -1,9 +1,11 @@
 package docparser
 
 import (
-	"fmt"
 	"go/ast"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -11,7 +13,7 @@ import (
 
 var (
 	regexpPath   = regexp.MustCompile("@openapi:path\n([^@]*)$")
-	regexpEntity = regexp.MustCompile(`@openapi:schema:?(\w+)?`)
+	rexexpSchema = regexp.MustCompile(`@openapi:schema:?(\w+)?:?(?:\[([\w,]+)\])?`)
 	tab          = regexp.MustCompile(`\t`)
 )
 
@@ -34,12 +36,12 @@ func NewOpenAPI() openAPI {
 	spec.Openapi = "3.0.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
-	spec.Components.Schemas = make(map[string]property)
+	spec.Components.Schemas = make(map[string]schema)
 	return spec
 }
 
 type Components struct {
-	Schemas         map[string]property
+	Schemas         map[string]schema
 	SecuritySchemes map[string]securitySchemes `yaml:"securitySchemes,omitempty"`
 }
 
@@ -68,22 +70,24 @@ type tag struct {
 	Description string
 }
 
-func newEntity() property {
-	e := property{}
-	e.Properties = make(map[string]property)
+func newEntity() schema {
+	e := schema{}
+	e.Properties = make(map[string]schema)
 	e.Items = make(map[string]string)
 	return e
 }
 
-type property struct {
-	Nullable   bool                `yaml:"nullable,omitempty"`
-	Required   []string            `yaml:"required,omitempty"`
-	Type       string              `yaml:",omitempty"`
-	Items      map[string]string   `yaml:",omitempty"`
-	Format     string              `yaml:"format,omitempty"`
-	Ref        string              `yaml:"$ref,omitempty"`
-	Enum       []string            `yaml:",omitempty"`
-	Properties map[string]property `yaml:",omitempty"`
+type schema struct {
+	Nullable             bool              `yaml:"nullable,omitempty"`
+	Required             []string          `yaml:"required,omitempty"`
+	Type                 string            `yaml:",omitempty"`
+	Items                map[string]string `yaml:",omitempty"`
+	Format               string            `yaml:"format,omitempty"`
+	Ref                  string            `yaml:"$ref,omitempty"`
+	Enum                 []string          `yaml:",omitempty"`
+	Properties           map[string]schema `yaml:",omitempty"`
+	AdditionalProperties bool              `yaml:"additionalProperties,omitempty"`
+	OneOf                []schema          `yaml:"oneOf,omitempty"`
 }
 
 type items struct {
@@ -107,7 +111,7 @@ type action struct {
 type parameter struct {
 	In          string
 	Name        string
-	Schema      property `yaml:",omitempty"`
+	Schema      schema `yaml:",omitempty"`
 	Required    bool
 	Description string
 }
@@ -125,32 +129,45 @@ type response struct {
 }
 
 type header struct {
-	Description string   `yaml:",omitempty"`
-	Schema      property `yaml:",omitempty"`
+	Description string `yaml:",omitempty"`
+	Schema      schema `yaml:",omitempty"`
 }
 
 type content struct {
-	Schema property
+	Schema schema
 }
 
-func (spec *openAPI) ParsePathsFromFile(file string) {
-	logrus.WithField("name", file).Info("Parsing file")
-	f, err := parseFile(file)
-	if err != nil {
-		fmt.Println(err)
-		return
+func validatePath(path string) bool {
+	// vendoring path
+	if strings.Contains(path, "vendor") {
+		return false
 	}
-	spec.parsePaths(f)
+
+	// not golang file
+	if !strings.HasSuffix(path, ".go") {
+		return false
+	}
+
+	// dot file
+	if strings.HasPrefix(path, ".") {
+		return false
+	}
+
+	return true
 }
 
-func (spec *openAPI) ParseSchemasFromFile(file string) {
-	logrus.WithField("name", file).Info("Parsing file")
-	f, err := parseFile(file)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	spec.parseSchemas(f)
+func (spec *openAPI) Parse(path string) {
+	// fset := token.NewFileSet() // positions are relative to fset
+
+	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if validatePath(path) {
+			astFile, _ := parseFile(path)
+			spec.parseSchemas(astFile)
+			spec.parsePaths(astFile)
+		}
+		return nil
+	})
+
 }
 
 func (spec *openAPI) parsePaths(f *ast.File) {
@@ -214,15 +231,18 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 			continue
 		}
 		t := gd.Doc.Text()
+
+		// TODO: Rafacto with parseNamedType
 		for _, spc := range gd.Specs {
 
 			// If the node is a Type
 			if ts, ok := spc.(*ast.TypeSpec); ok {
 
 				entityName := ts.Name.Name
+				// fmt.Printf("type : %T %s\n", ts.Type, entityName)
 
 				// Looking for openapi entity
-				a := regexpEntity.FindSubmatch([]byte(t))
+				a := rexexpSchema.FindSubmatch([]byte(t))
 
 				if len(a) == 0 {
 					continue
@@ -232,6 +252,43 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 				if len(a) == 2 {
 					if string(a[1]) != "" {
 						entityName = string(a[1])
+					}
+				}
+
+				// array type
+				if ar, ok := ts.Type.(*ast.ArrayType); ok {
+					if i, ok := ar.Elt.(*ast.Ident); ok {
+						e := newEntity()
+						e.Type = "array"
+						t, _, _ := parseIdentProperty(i)
+						e.Items["type"] = t
+						logrus.
+							WithField("name", entityName).
+							Info("Parsing Schema")
+					}
+				}
+
+				// MapType
+				if mp, ok := ts.Type.(*ast.MapType); ok {
+
+					// only map[string]
+					if i, ok := mp.Key.(*ast.Ident); ok {
+						t, _, _ := parseIdentProperty(i)
+						if t != "string" {
+							continue
+						}
+					}
+
+					e := newEntity()
+					e.Type = "object"
+					e.AdditionalProperties = true
+
+					// map[string]interface{}
+					if _, ok := mp.Value.(*ast.InterfaceType); ok {
+						spec.Components.Schemas[entityName] = e
+						logrus.
+							WithField("name", entityName).
+							Info("Parsing Schema")
 					}
 				}
 
@@ -284,6 +341,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					spec.Components.Schemas[entityName] = e
 				}
 
+				// ArrayType
 				if tpa, ok := ts.Type.(*ast.ArrayType); ok {
 					entity := newEntity()
 					p, err := parseNamedType(f, tpa.Elt)
@@ -291,10 +349,26 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						continue
 					}
+
 					entity.Type = "array"
-					entity.Items["$ref"] = p.Ref
+					if p.Ref != "" {
+						entity.Items["$ref"] = p.Ref
+					} else {
+						entity.Items["type"] = p.Type
+					}
+
 					spec.Components.Schemas[entityName] = entity
 				}
+
+				// if i, ok := ar.Elt.(*ast.Ident); ok {
+				// 	e := newEntity()
+				// 	e.Type = "array"
+				// 	t, _, _ := parseIdentProperty(i)
+				// 	e.Items["type"] = t
+				// 	logrus.
+				// 		WithField("name", entityName).
+				// 		Info("Parsing Schema")
+				// }
 
 			}
 		}
