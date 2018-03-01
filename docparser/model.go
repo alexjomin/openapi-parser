@@ -109,6 +109,7 @@ type action struct {
 }
 
 type parameter struct {
+	Example     string `yaml:"example,omitempty"`
 	In          string
 	Name        string
 	Schema      schema `yaml:",omitempty"`
@@ -359,17 +360,6 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 					spec.Components.Schemas[entityName] = entity
 				}
-
-				// if i, ok := ar.Elt.(*ast.Ident); ok {
-				// 	e := newEntity()
-				// 	e.Type = "array"
-				// 	t, _, _ := parseIdentProperty(i)
-				// 	e.Items["type"] = t
-				// 	logrus.
-				// 		WithField("name", entityName).
-				// 		Info("Parsing Schema")
-				// }
-
 			}
 		}
 	}

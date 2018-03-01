@@ -76,10 +76,5 @@ Flags:
 
 ### Example
 
-<<<<<<< HEAD
-`openapi-parser --paths ./handler --schemas ./storage/model/exposed,./storage/model/editable`
-=======
 `parser-openapi`
-
 `parser-openapi --path /my/path my-openapi.yaml`
->>>>>>> wip
