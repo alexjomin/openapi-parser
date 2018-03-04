@@ -74,8 +74,8 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	return j, nil
 }
 
-func parseNamedType(gofile *ast.File, expr ast.Expr) (*property, error) {
-	p := property{}
+func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
+	p := schema{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
 		t, format, err := parseIdentProperty(ftpe)
