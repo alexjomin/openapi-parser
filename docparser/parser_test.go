@@ -14,6 +14,14 @@ type parseJSONTagTestCase struct {
 	expectedError   string
 }
 
+type parseIdentPropertyTestCase struct {
+	description    string
+	expr           *ast.Ident
+	expectedType   string
+	expectedError  string
+	expectedFormat string
+}
+
 func TestParseJSONTag(t *testing.T) {
 	testCases := []parseJSONTagTestCase{
 		{
@@ -136,6 +144,26 @@ func TestParseJSONTag(t *testing.T) {
 				enum:     []string{"a", "b"},
 			},
 		},
+		{
+			description: "Should use Tag name rather than ident name",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\"jsontagname\" validate:\"required,enum=a b\"`",
+				},
+				Names: []*ast.Ident{
+					&ast.Ident{
+						Name: "testName",
+					},
+				},
+			},
+			expectedJSONTag: jsonTagInfo{
+				required: true,
+				name:     "jsontagname",
+				enum:     []string{"a", "b"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
@@ -146,6 +174,75 @@ func TestParseJSONTag(t *testing.T) {
 			}
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedJSONTag, parsedJSONTag)
+		})
+	}
+}
+
+func TestParseIdentProperty(t *testing.T) {
+	testCases := []parseIdentPropertyTestCase{
+		{
+			description:   "parse empty ident",
+			expr:          &ast.Ident{},
+			expectedError: "Can't set the type ",
+		},
+		{
+			description:   "parse unknown ident type",
+			expr:          &ast.Ident{Name: "unknown"},
+			expectedType:  "unknown",
+			expectedError: "Can't set the type unknown",
+		},
+		{
+			description:  "parse string ident type",
+			expr:         &ast.Ident{Name: "string"},
+			expectedType: "string",
+		},
+		{
+			description:  "parse bson ident type",
+			expr:         &ast.Ident{Name: "bson"},
+			expectedType: "string",
+		},
+		{
+			description:  "parse integer ident type",
+			expr:         &ast.Ident{Name: "int"},
+			expectedType: "integer",
+		},
+		{
+			description:  "parse int64 ident type",
+			expr:         &ast.Ident{Name: "int64"},
+			expectedType: "integer",
+		},
+		{
+			description:  "parse int32 ident type",
+			expr:         &ast.Ident{Name: "int32"},
+			expectedType: "integer",
+		},
+		{
+			description:    "parse time ident type",
+			expr:           &ast.Ident{Name: "time"},
+			expectedType:   "string",
+			expectedFormat: "date-time",
+		},
+		{
+			description:  "parse float64 ident type",
+			expr:         &ast.Ident{Name: "float64"},
+			expectedType: "number",
+		},
+		{
+			description:  "parse bool ident type",
+			expr:         &ast.Ident{Name: "bool"},
+			expectedType: "boolean",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tp, format, err := parseIdentProperty(tc.expr)
+			if tc.expectedError != "" {
+				assert.Equal(t, tc.expectedError, err.Error())
+				return
+			}
+			assert.Nil(t, err)
+			assert.Equal(t, tc.expectedType, tp)
+			assert.Equal(t, tc.expectedFormat, format)
 		})
 	}
 }
