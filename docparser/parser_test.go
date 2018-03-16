@@ -2,9 +2,8 @@ package docparser
 
 import (
 	"go/ast"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type parseJSONTagTestCase struct {
@@ -168,12 +167,17 @@ func TestParseJSONTag(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			parsedJSONTag, err := parseJSONTag(tc.field)
-			if tc.expectedError != "" {
-				assert.Equal(t, tc.expectedError, err.Error())
-				return
+			if (err != nil) && (len(tc.expectedError) > 0) {
+				if err.Error() != tc.expectedError {
+					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
 			}
-			assert.Nil(t, err)
-			assert.Equal(t, tc.expectedJSONTag, parsedJSONTag)
+			if (err != nil) && (len(tc.expectedError) == 0) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(tc.expectedJSONTag, parsedJSONTag) {
+				t.Errorf("got: %v, want: %v", parsedJSONTag, tc.expectedJSONTag)
+			}
 		})
 	}
 }
