@@ -167,9 +167,12 @@ func TestParseJSONTag(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			parsedJSONTag, err := parseJSONTag(tc.field)
-			if (err != nil) && (len(tc.expectedError) > 0) {
-				if err.Error() != tc.expectedError {
+			if len(tc.expectedError) > 0 {
+				if (err != nil) && (err.Error() != tc.expectedError) {
 					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
+				if err == nil {
+					t.Fatalf("expected error: %v . Got nothing", tc.expectedError)
 				}
 			}
 			if (err != nil) && (len(tc.expectedError) == 0) {
