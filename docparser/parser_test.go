@@ -243,13 +243,23 @@ func TestParseIdentProperty(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			tp, format, err := parseIdentProperty(tc.expr)
-			if tc.expectedError != "" {
-				assert.Equal(t, tc.expectedError, err.Error())
-				return
+			if len(tc.expectedError) > 0 {
+				if (err != nil) && (err.Error() != tc.expectedError) {
+					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
+				if err == nil {
+					t.Fatalf("expected error: %v . Got nothing", tc.expectedError)
+				}
 			}
-			assert.Nil(t, err)
-			assert.Equal(t, tc.expectedType, tp)
-			assert.Equal(t, tc.expectedFormat, format)
+			if (err != nil) && (len(tc.expectedError) == 0) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tc.expectedType != tp {
+				t.Errorf("got: %v, want: %v", tp, tc.expectedType)
+			}
+			if tc.expectedFormat != format {
+				t.Errorf("got: %v, want: %v", format, tc.expectedFormat)
+			}
 		})
 	}
 }
