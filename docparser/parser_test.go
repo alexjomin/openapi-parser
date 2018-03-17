@@ -2,6 +2,7 @@ package docparser
 
 import (
 	"go/ast"
+	"go/token"
 	"reflect"
 	"testing"
 )
@@ -26,6 +27,61 @@ type parseNamedTypeTestCase struct {
 	expr           ast.Expr
 	expectedSchema *schema
 	expectedError  string
+}
+type parseFileTestCase struct {
+	description         string
+	goFilePath          string
+	expectedFilePackage token.Pos
+	expectedError       string
+	expectedFileName    string
+}
+
+func TestParseFile(t *testing.T) {
+	testCases := []parseFileTestCase{
+		{
+			description:   "should throw err with no path",
+			expectedError: "open : no such file or directory",
+		},
+		{
+			description:   "should throw err with incorrect path",
+			goFilePath:    "/root/file",
+			expectedError: "open /root/file: no such file or directory",
+		},
+		{
+			description:         "should parse incorrect file",
+			goFilePath:          "../Makefile",
+			expectedError:       "1:1: expected 'package', found 'IDENT' install (and 1 more errors)",
+			expectedFilePackage: 0,
+		},
+		{
+			description:         "should parse file",
+			goFilePath:          "datatest/user.go",
+			expectedFilePackage: 1,
+			expectedFileName:    "cmd",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			file, err := parseFile(tc.goFilePath)
+			if len(tc.expectedError) > 0 {
+				if (err != nil) && (err.Error() != tc.expectedError) {
+					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
+				if err == nil {
+					t.Fatalf("expected error: %v . Got nothing", tc.expectedError)
+				}
+			}
+			if (err != nil) && (len(tc.expectedError) == 0) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if file != nil && file.Name != nil && file.Name.Name != tc.expectedFileName {
+				t.Errorf("got: %v, want: %v", file.Name, tc.expectedFileName)
+			}
+			if file != nil && file.Package != tc.expectedFilePackage {
+				t.Errorf("got: %v, want: %v", file.Name, tc.expectedFileName)
+			}
+		})
+	}
 }
 
 func TestParseNamedType(t *testing.T) {
