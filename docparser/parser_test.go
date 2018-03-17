@@ -43,11 +43,6 @@ func TestParseFile(t *testing.T) {
 			expectedError: "open : no such file or directory",
 		},
 		{
-			description:   "should throw err with incorrect path",
-			goFilePath:    "/root/file",
-			expectedError: "open /root/file: no such file or directory",
-		},
-		{
 			description:         "should parse incorrect file",
 			goFilePath:          "../Makefile",
 			expectedError:       "1:1: expected 'package', found 'IDENT' install (and 1 more errors)",
