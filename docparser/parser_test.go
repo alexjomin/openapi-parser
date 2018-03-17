@@ -20,7 +20,112 @@ type parseIdentPropertyTestCase struct {
 	expectedError  string
 	expectedFormat string
 }
+type parseNamedTypeTestCase struct {
+	description    string
+	gofile         *ast.File
+	expr           ast.Expr
+	expectedSchema *schema
+	expectedError  string
+}
 
+func TestParseNamedType(t *testing.T) {
+	testCases := []parseNamedTypeTestCase{
+		{
+			description:    "Should parse *ast.Ident with unknown name",
+			expr:           &ast.Ident{Name: "unknown"},
+			expectedSchema: &schema{Ref: "#/components/schemas/unknown"},
+		},
+
+		{
+			description:    "Should parse *ast.Ident with name string",
+			expr:           &ast.Ident{Name: "string"},
+			expectedSchema: &schema{Type: "string"},
+		},
+		{
+			description:    "Should parse *ast.Ident with name time",
+			expr:           &ast.Ident{Name: "time"},
+			expectedSchema: &schema{Type: "string", Format: "date-time"},
+		},
+		{
+			description:    "Should parse *ast.StarExpr and set Nullable",
+			expr:           &ast.StarExpr{X: &ast.Ident{Name: "time"}},
+			expectedSchema: &schema{Type: "string", Format: "date-time", Nullable: true},
+		},
+		{
+			description: "Should parse *ast.ArrayType with know type",
+			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "time"}},
+			expectedSchema: &schema{Type: "array", Items: map[string]string{
+				"type": "string",
+			}},
+		},
+		{
+			description: "Should parse *ast.ArrayType with unknown type",
+			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "unknown"}},
+			expectedSchema: &schema{Type: "array", Items: map[string]string{
+				"$ref": "#/components/schemas/unknown",
+			}},
+		},
+		{
+			description:   "Should throw error when parse *ast.StructType",
+			expr:          &ast.StructType{},
+			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+		},
+		{
+			description:   "Should throw error when parse *ast.MapType",
+			expr:          &ast.MapType{},
+			expectedError: "expr (&{%!s(token.Pos=0) <nil> <nil>}) not yet unsupported",
+		},
+		{
+			description:   "Should throw error when parse *ast.InterfaceType",
+			expr:          &ast.InterfaceType{},
+			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+		},
+		{
+			description:    "Should parse *ast.SelectorExpr",
+			expr:           &ast.SelectorExpr{X: &ast.Ident{Name: "time"}},
+			expectedSchema: &schema{Type: "string", Format: "date-time"},
+		},
+
+		{
+			description: "Should parse correctly a selector of an array of pointer of unknown type",
+			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "unknown"}}}},
+			expectedSchema: &schema{Type: "array", Items: map[string]string{
+				"$ref": "#/components/schemas/unknown",
+			}},
+		},
+		{
+			description: "Should parse correctly a selector of an array of pointer of time type",
+			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "time"}}}},
+			expectedSchema: &schema{Type: "array", Items: map[string]string{
+				"type": "string",
+			}},
+		},
+		{
+			description:   "Should return  error for unsupported types",
+			expr:          &ast.FuncType{},
+			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) type (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) is unsupported for a schema",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			schema, err := parseNamedType(tc.gofile, tc.expr)
+			if len(tc.expectedError) > 0 {
+				if (err != nil) && (err.Error() != tc.expectedError) {
+					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
+				if err == nil {
+					t.Fatalf("expected error: %v . Got nothing", tc.expectedError)
+				}
+			}
+			if (err != nil) && (len(tc.expectedError) == 0) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(tc.expectedSchema, schema) {
+				t.Errorf("got: %v, want: %v", schema, tc.expectedSchema)
+			}
+		})
+	}
+}
 func TestParseJSONTag(t *testing.T) {
 	testCases := []parseJSONTagTestCase{
 		{
