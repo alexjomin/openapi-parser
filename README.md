@@ -1,4 +1,4 @@
-# Parser OpenAPI
+# Parser OpenAPI [![Build Status](https://travis-ci.org/alexjomin/openapi-parser.svg?branch=master)](https://travis-ci.org/alexjomin/openapi-parser)
 
 Parse openAPI from go comments in handlers and structs
 
