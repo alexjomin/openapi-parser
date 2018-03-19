@@ -77,4 +77,5 @@ Flags:
 ### Example
 
 `parser-openapi`
+
 `parser-openapi --path /my/path my-openapi.yaml`
