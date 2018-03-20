@@ -78,4 +78,4 @@ Flags:
 
 `parser-openapi`
 
-`parser-openapi --path /my/path my-openapi.yaml`
+`parser-openapi --path /my/path --output my-openapi.yaml`
