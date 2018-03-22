@@ -74,7 +74,7 @@ var mergeCmd = &cobra.Command{
 						logrus.
 							WithField("schema", k).
 							WithField("file", lf.Name()).
-							Error("Schema already exists and different !")
+							Fatal("Schema already exists and different !")
 					}
 					continue
 				}
