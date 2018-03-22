@@ -249,8 +249,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					continue
 				}
 
-				// Name overide
-				if len(a) == 2 {
+				if len(a) == 3 {
 					if string(a[1]) != "" {
 						entityName = string(a[1])
 					}
