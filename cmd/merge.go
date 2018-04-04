@@ -41,10 +41,11 @@ var mergeCmd = &cobra.Command{
 			logrus.Fatal(err)
 		}
 
-		logrus.Warn("Merging Files")
+		logrus.Warn("Merging Files Frodon")
 
 		for _, lf := range files {
 			if !strings.HasSuffix(lf.Name(), ".yaml") {
+				logrus.Warn("No YAML Files found")
 				continue
 			}
 			m, err := ioutil.ReadFile(filesDir + "/" + lf.Name())
@@ -61,7 +62,7 @@ var mergeCmd = &cobra.Command{
 			for k, v := range spec.Paths {
 				url := k
 				for verb, action := range v {
-					logrus.WithField("verb", verb).WithField("url", url).Info("Adding Path")
+					logrus.WithField("verb", verb).WithField("url", url).Warn("Adding Path")
 					main.AddAction(url, verb, action)
 				}
 			}
@@ -79,7 +80,7 @@ var mergeCmd = &cobra.Command{
 					continue
 				}
 				main.Components.Schemas[k] = v
-				logrus.WithField("schema", k).Info("Adding Schema")
+				logrus.WithField("schema", k).Warn("Adding Schema")
 			}
 
 		}
