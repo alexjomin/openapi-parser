@@ -376,7 +376,7 @@ func (spec *openAPI) AddAction(path, verb string, a action) {
 func (spec *openAPI) parseInfos(f *ast.File) {
 	for _, s := range f.Comments {
 		t := s.Text()
-		// Test if comments is an info block
+		// Test if comment is an info block
 		a := regexpInfo.FindSubmatch([]byte(t))
 		if len(a) == 0 {
 			continue
