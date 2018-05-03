@@ -1,4 +1,4 @@
-package cmd
+package user
 
 import (
 	"time"
@@ -93,7 +93,7 @@ type Pet struct {
 // Foo struct
 // @openapi:schema
 type Foo struct {
-	String string `json:"string,omitempty"`
+	String string `json:"string"`
 }
 
 // Foo2 struct

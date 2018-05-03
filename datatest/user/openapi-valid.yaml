@@ -1,0 +1,134 @@
+openapi: 3.0.0
+info:
+  version: 0.0.1
+  title: Some cool title
+  description: Awesome description
+servers: []
+paths:
+  /pets:
+    get:
+      description: Returns all pets from the system that the user has access to
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+          description: A list of pets.
+        "302":
+          content: {}
+          description: Trip Signals Redirection
+          headers:
+            Location:
+              description: The url to the signal API
+              schema:
+                type: string
+      tags:
+      - pet
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: integer
+          enum:
+          - "3"
+          - "4"
+        required: true
+        description: Numeric ID of the user to get
+      security:
+      - petstore_auth:
+        - write:pets
+        - read:pets
+    post:
+      description: Returns all pets from the system that the user has access to
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+          description: Post a new pet
+      parameters: []
+      requestBody:
+        description: Pet to add to the store
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    EditableFoo:
+      type: object
+      properties:
+        string:
+          type: string
+    Foo:
+      type: object
+      properties:
+        string:
+          type: string
+    Pet:
+      required:
+      - string
+      type: object
+      properties:
+        IntData:
+          type: object
+          additionalProperties:
+            type: integer
+        children:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Pet'
+        enumTest:
+          type: string
+          enum:
+          - UNKNOWN
+          - MALE
+          - FEMALE
+        id:
+          type: string
+        int:
+          type: integer
+        pointerOfString:
+          nullable: true
+          type: string
+        pointerOfStruct:
+          nullable: true
+          $ref: '#/components/schemas/Foo'
+        pointerOfTime:
+          nullable: true
+          type: string
+          format: date-time
+        sliceOfStruct:
+          type: array
+          items:
+            $ref: '#/components/schemas/Foo'
+        sliceofInt:
+          type: array
+          items:
+            type: integer
+        sliceofString:
+          type: array
+          items:
+            type: string
+        strData:
+          type: object
+          additionalProperties:
+            type: string
+        string:
+          type: string
+        struct:
+          $ref: '#/components/schemas/Foo'
+        time:
+          type: string
+          format: date-time
+    Signals:
+      type: array
+      items:
+        $ref: '#/components/schemas/Foo'

@@ -30,7 +30,7 @@ var mergeCmd = &cobra.Command{
 			logrus.Fatal(err)
 		}
 
-		main := docparser.NewOpenAPI()
+		main := docparser.NewOpenAPI(false)
 		err = yaml.Unmarshal(m, &main)
 		if err != nil {
 			logrus.Fatal(err)
@@ -52,7 +52,7 @@ var mergeCmd = &cobra.Command{
 				logrus.Fatal(err)
 			}
 
-			spec := docparser.NewOpenAPI()
+			spec := docparser.NewOpenAPI(false)
 			err = yaml.Unmarshal(m, &spec)
 			if err != nil {
 				logrus.Fatal(err)

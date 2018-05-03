@@ -1,0 +1,301 @@
+openapi: 3.0.0
+info:
+  version: 1.2.3
+  title: jsonapitags
+  description: Datatest for jsonapi tags
+servers: []
+paths: {}
+components:
+  schemas:
+    Bar:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BarData'
+        includes:
+          nullable: true
+          type: array
+          items:
+            anyOf:
+            - $ref: '#/components/schemas/BarData'
+            - $ref: '#/components/schemas/BazData'
+            - $ref: '#/components/schemas/QuxData'
+    BarAttributes:
+      type: object
+      properties:
+        field4:
+          type: string
+    BarCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BarData'
+    BarData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        attributes:
+          $ref: '#/components/schemas/BarAttributes'
+        id:
+          type: string
+        relationships:
+          $ref: '#/components/schemas/BarRelationships'
+        type:
+          type: string
+          enum:
+          - bars
+    BarIdentifier:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BarIdentifierData'
+    BarIdentifierCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BarIdentifierData'
+    BarIdentifierData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - bars
+    BarRelationships:
+      type: object
+      properties:
+        ref3:
+          $ref: '#/components/schemas/BazIdentifierCollection'
+        ref4:
+          $ref: '#/components/schemas/BarIdentifierCollection'
+    Baz:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BazData'
+        includes:
+          nullable: true
+          type: array
+          items:
+            anyOf:
+            - $ref: '#/components/schemas/QuxData'
+    BazAttributes:
+      type: object
+      properties:
+        field5:
+          type: string
+    BazCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BazData'
+    BazData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        attributes:
+          $ref: '#/components/schemas/BazAttributes'
+        id:
+          type: string
+        relationships:
+          $ref: '#/components/schemas/BazRelationships'
+        type:
+          type: string
+          enum:
+          - bazs
+    BazIdentifier:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BazIdentifierData'
+    BazIdentifierCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BazIdentifierData'
+    BazIdentifierData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - bazs
+    BazRelationships:
+      type: object
+      properties:
+        ref6:
+          $ref: '#/components/schemas/QuxIdentifier'
+    ErrorObject:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        status:
+          type: integer
+        title:
+          type: string
+    ErrorsPayload:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorObject'
+    Foo:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FooData'
+        includes:
+          nullable: true
+          type: array
+          items:
+            anyOf:
+            - $ref: '#/components/schemas/BarData'
+            - $ref: '#/components/schemas/BazData'
+            - $ref: '#/components/schemas/QuxData'
+    FooAttributes:
+      type: object
+      properties:
+        field2:
+          type: string
+        field3:
+          type: string
+    FooCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FooData'
+    FooData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        attributes:
+          $ref: '#/components/schemas/FooAttributes'
+        id:
+          type: string
+        relationships:
+          $ref: '#/components/schemas/FooRelationships'
+        type:
+          type: string
+          enum:
+          - foos
+    FooIdentifier:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FooIdentifierData'
+    FooIdentifierCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FooIdentifierData'
+    FooIdentifierData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - foos
+    FooRelationships:
+      type: object
+      properties:
+        ref1:
+          $ref: '#/components/schemas/BarIdentifier'
+        ref2:
+          nullable: true
+          $ref: '#/components/schemas/BazIdentifier'
+    Qux:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/QuxData'
+    QuxAttributes:
+      type: object
+      properties:
+        field7:
+          type: string
+    QuxCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuxData'
+    QuxData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        attributes:
+          $ref: '#/components/schemas/QuxAttributes'
+        id:
+          type: string
+        relationships:
+          $ref: '#/components/schemas/QuxRelationships'
+        type:
+          type: string
+          enum:
+          - quxs
+    QuxIdentifier:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/QuxIdentifierData'
+    QuxIdentifierCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuxIdentifierData'
+    QuxIdentifierData:
+      required:
+      - id
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - quxs
+    QuxRelationships:
+      type: object

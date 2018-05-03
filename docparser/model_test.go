@@ -147,7 +147,7 @@ func TestParseInfos(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			spec := NewOpenAPI()
+			spec := NewOpenAPI(false)
 			for _, gofile := range tc.gofiles {
 				spec.parseInfos(gofile)
 			}

@@ -1,0 +1,35 @@
+openapi: 3.0.0
+info:
+  version: 1.2.3
+  title: jsontags
+  description: Datatest for json tags
+servers: []
+paths: {}
+components:
+  schemas:
+    Bar:
+      required:
+      - requiredField
+      - requiredButNotValidatedField
+      type: object
+      properties:
+        nullableField:
+          type: string
+        requiredButNotValidatedField:
+          type: string
+        requiredField:
+          type: string
+    Baz:
+      type: object
+      properties:
+        booleanAsString:
+          type: string
+          format: boolean
+        float64AsString:
+          type: string
+          format: number
+        intAsString:
+          type: string
+          format: integer
+        stringAsString:
+          type: string

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -19,25 +20,27 @@ var (
 )
 
 type openAPI struct {
-	Openapi    string
-	Info       info
-	Servers    []server
-	Paths      map[string]path
-	Tags       []tag `yaml:"tags,omitempty"`
-	Components Components
+	Openapi                string
+	Info                   info
+	Servers                []server
+	Paths                  map[string]path
+	Tags                   []tag `yaml:"tags,omitempty"`
+	Components             Components
+	withoutJsonapiIncludes bool
 }
 
 type server struct {
 	URL         string `yaml:"url"`
-	Description string `yame:"description"`
+	Description string `yaml:"description"`
 }
 
-func NewOpenAPI() openAPI {
+func NewOpenAPI(withoutJsonapiIncludes bool) openAPI {
 	spec := openAPI{}
 	spec.Openapi = "3.0.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
 	spec.Components.Schemas = make(map[string]schema)
+	spec.withoutJsonapiIncludes = withoutJsonapiIncludes
 	return spec
 }
 
@@ -71,31 +74,75 @@ type tag struct {
 	Description string
 }
 
+type itemData struct {
+	value   string
+	schemas itemDataSchema
+}
+
+type itemDataSchema []schema
+
+func (v itemDataSchema) Len() int           { return len(v) }
+func (v itemDataSchema) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v itemDataSchema) Less(i, j int) bool { return v[i].Ref < v[j].Ref }
+
+func (a *itemData) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s []schema
+	err := unmarshal(&a.schemas)
+	if err != nil {
+		var v string
+		err := unmarshal(&a.value)
+		if err != nil {
+			return err
+		}
+		a = &itemData{
+			value: v,
+		}
+	} else {
+		a = &itemData{
+			schemas: s,
+		}
+	}
+	return nil
+}
+
+func (a itemData) MarshalYAML() (interface{}, error) {
+	if a.schemas != nil {
+		return a.schemas, nil
+	}
+	return a.value, nil
+}
+
 func newEntity() schema {
 	e := schema{}
 	e.Properties = make(map[string]schema)
-	e.Items = make(map[string]string)
+	e.Items = make(map[string]itemData)
 	return e
 }
 
 type schema struct {
-	Nullable             bool              `yaml:"nullable,omitempty"`
-	Required             []string          `yaml:"required,omitempty"`
-	Type                 string            `yaml:",omitempty"`
-	Items                map[string]string `yaml:",omitempty"`
-	Format               string            `yaml:"format,omitempty"`
-	Ref                  string            `yaml:"$ref,omitempty"`
-	Enum                 []string          `yaml:",omitempty"`
-	Properties           map[string]schema `yaml:",omitempty"`
-	AdditionalProperties *schema           `yaml:"additionalProperties,omitempty"`
-	OneOf                []schema          `yaml:"oneOf,omitempty"`
+	Nullable             bool                `yaml:"nullable,omitempty"`
+	Required             []string            `yaml:"required,omitempty"`
+	Type                 string              `yaml:",omitempty"`
+	Items                map[string]itemData `yaml:",omitempty"`
+	Format               string              `yaml:"format,omitempty"`
+	Ref                  string              `yaml:"$ref,omitempty"`
+	Enum                 []string            `yaml:",omitempty"`
+	Properties           map[string]schema   `yaml:",omitempty"`
+	AdditionalProperties *schema             `yaml:"additionalProperties,omitempty"`
+	OneOf                []schema            `yaml:"oneOf,omitempty"`
+	AllOf                []schema            `yaml:"allOf,omitempty"`
+	Discriminator        discriminator       `yaml:"discriminator,omitempty"`
+}
+
+type discriminator struct {
+	PropertyName string            `yaml:"propertyName,omitempty"`
+	Mapping      map[string]string `yaml:"mapping,omitempty"`
 }
 
 type items struct {
 	Type string
 }
 
-// /pets: action
 type path map[string]action
 
 type action struct {
@@ -192,8 +239,8 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 			logrus.
 				WithError(err).
 				WithField("content", content).
-				Error("Unable to unmarshal path")
-			continue
+				Fatal("Unable to unmarshal path")
+			return
 		}
 
 		for url, path := range p {
@@ -205,8 +252,8 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 						logrus.
 							WithField("url", url).
 							WithField("verb", currentVerb).
-							Error("Verb for this path already exists")
-						continue
+							Fatal("Verb for this path already exists")
+						return
 					}
 					spec.Paths[url][currentVerb] = currentDesc
 				}
@@ -228,6 +275,9 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 }
 
 func (spec *openAPI) parseSchemas(f *ast.File) {
+
+	jsonapiIncludesResources := make(map[string][]string)
+
 	for _, decl := range f.Decls {
 		gd, ok := decl.(*ast.GenDecl)
 		if !ok {
@@ -235,7 +285,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 		}
 		t := gd.Doc.Text()
 
-		// TODO: Rafacto with parseNamedType
+		// TODO: Refacto with parseNamedType
 		for _, spc := range gd.Specs {
 
 			// If the node is a Type
@@ -263,10 +313,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 						e := newEntity()
 						e.Type = "array"
 						t, _, _ := parseIdentProperty(i)
-						e.Items["type"] = t
+						e.Items["type"] = itemData{value: t}
 						logrus.
 							WithField("name", entityName).
-							Info("Parsing Schema")
+							Info("Parsing Schema of array")
 					}
 				}
 
@@ -290,38 +340,214 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 						spec.Components.Schemas[entityName] = e
 						logrus.
 							WithField("name", entityName).
-							Info("Parsing Schema")
+							Info("Parsing Schema of map")
 					}
 				}
 
-				// StructType
+				// StructType (with jsonapi tags)
+				var isJSONAPIStruct bool
 				if tpe, ok := ts.Type.(*ast.StructType); ok {
+					var fieldsCount = 0
+					var jsonapiFieldsCount = 0
+
+					for _, fld := range tpe.Fields.List {
+						if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
+							fieldsCount++
+							t, err := haveTag(fld, "jsonapi")
+							if err != nil {
+								logrus.WithError(err).WithField("name", entityName).
+									Fatal("Can't used a malformed field in a jsonapi struct")
+								return
+							}
+							if t {
+								jsonapiFieldsCount++
+							}
+						}
+					}
+
+					if jsonapiFieldsCount > 0 {
+						isJSONAPIStruct = true
+						if fieldsCount != jsonapiFieldsCount {
+							logrus.WithField("name", entityName).
+								WithField("missing_fields", fieldsCount-jsonapiFieldsCount).
+								Fatal("Can't used struct with missing jsonapi tags")
+							return
+						}
+					}
+
+					if isJSONAPIStruct {
+
+						e := newEntity()
+						e.Type = "object"
+						e.Properties["data"] = schema{
+							Ref: "#/components/schemas/" + entityName + "Data",
+						}
+
+						eID := newEntity()
+						eID.Type = "object"
+						eID.Properties["data"] = schema{
+							Ref: "#/components/schemas/" + entityName + "IdentifierData",
+						}
+
+						collection := newEntity()
+						collection.Type = "object"
+						var dataField = schema{
+							Type:  "array",
+							Items: make(map[string]itemData),
+						}
+						dataField.Items["$ref"] = itemData{value: "#/components/schemas/" + entityName + "Data"}
+						collection.Properties["data"] = dataField
+
+						collectionID := newEntity()
+						collectionID.Type = "object"
+						var dataFieldID = schema{
+							Type:  "array",
+							Items: make(map[string]itemData),
+						}
+						dataFieldID.Items["$ref"] = itemData{value: "#/components/schemas/" + entityName + "IdentifierData"}
+						collectionID.Properties["data"] = dataFieldID
+
+						data := newEntity()
+						data.Type = "object"
+						data.Properties["attributes"] = schema{
+							Ref: "#/components/schemas/" + entityName + "Attributes",
+						}
+						data.Properties["relationships"] = schema{
+							Ref: "#/components/schemas/" + entityName + "Relationships",
+						}
+
+						dataID := newEntity()
+						dataID.Type = "object"
+
+						attributes := newEntity()
+						attributes.Type = "object"
+
+						relationships := newEntity()
+						relationships.Type = "object"
+
+						logrus.
+							WithField("name", entityName).
+							Info("Parsing Schema of Struct (with jsonapi tags)")
+
+						for _, fld := range tpe.Fields.List {
+							if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
+								ja, err := parseJSONAPITag(fld)
+								if err != nil {
+									logrus.WithError(err).WithField("field", fld.Names[0]).
+										Fatal("Can't parse jsonapi tag in field")
+									return
+								}
+
+								if ja.isPrimary {
+									addPrimaryFieldToJSONAPIData(&data, ja.primaryType)
+									addPrimaryFieldToJSONAPIData(&dataID, ja.primaryType)
+								} else {
+									v, err := parseValidateTag(fld)
+									if err != nil {
+										logrus.WithError(err).WithField("field", fld.Names[0]).
+											Fatal("Can't parse validate tag in field")
+										return
+									}
+
+									var currentEntity = data
+									if ja.isAttribute {
+										currentEntity = attributes
+									}
+									if ja.isRelation {
+										currentEntity = relationships
+									}
+
+									if v.required {
+										currentEntity.Required = append(currentEntity.Required, ja.name)
+									}
+
+									p, t, err := parseNamedType(f, fld.Type)
+									if err != nil {
+										logrus.WithError(err).WithField("field", fld.Names[0]).
+											Fatal("Can't parse the type of field in struct")
+										return
+									}
+
+									if len(v.enum) > 0 {
+										p.Enum = v.enum
+									}
+
+									if p != nil {
+										if ja.isRelation {
+											if p.Type != "array" {
+												p.Ref += "Identifier"
+											} else {
+												np := &schema{
+													Ref: p.Items["$ref"].value + "IdentifierCollection",
+												}
+												p = np
+											}
+											jsonapiIncludesResources[entityName] = append(jsonapiIncludesResources[entityName], t)
+										}
+
+										currentEntity.Properties[ja.name] = *p
+									}
+								}
+							}
+						}
+
+						spec.Components.Schemas[entityName] = e
+						spec.Components.Schemas[entityName+"Identifier"] = eID
+						spec.Components.Schemas[entityName+"Collection"] = collection
+						spec.Components.Schemas[entityName+"IdentifierCollection"] = collectionID
+						spec.Components.Schemas[entityName+"Data"] = data
+						spec.Components.Schemas[entityName+"IdentifierData"] = dataID
+						spec.Components.Schemas[entityName+"Attributes"] = attributes
+						spec.Components.Schemas[entityName+"Relationships"] = relationships
+					}
+				}
+
+				// StructType (with json tags)
+				if tpe, ok := ts.Type.(*ast.StructType); ok && !isJSONAPIStruct {
 					e := newEntity()
 					e.Type = "object"
 
 					logrus.
 						WithField("name", entityName).
-						Info("Parsing Schema")
+						Info("Parsing Schema of Struct (with json tags)")
 
 					for _, fld := range tpe.Fields.List {
 						if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
+							v, err := parseValidateTag(fld)
+
 							j, err := parseJSONTag(fld)
-							if j.ignore {
+
+							if j.omitted {
 								continue
 							}
-							p, err := parseNamedType(f, fld.Type)
 
-							if j.required {
+							p, _, err := parseNamedType(f, fld.Type)
+							if err != nil {
+								logrus.WithError(err).WithField("field", fld.Names[0]).Fatal("Can't parse the type of field in struct")
+								return
+							}
+
+							if v.required {
 								e.Required = append(e.Required, j.name)
 							}
 
-							if err != nil {
-								logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
-								continue
+							if j.asString {
+								// https://golang.org/pkg/encoding/json/#Marshal
+								// The "string" option signals that a field is stored as JSON inside a JSON-encoded string.
+								// It applies only to fields of string, floating point, integer, or boolean types.
+								switch p.Type {
+								case "string":
+								case "integer", "number", "boolean":
+									p.Format = p.Type
+									p.Type = "string"
+								default:
+									logrus.WithError(err).WithField("field", fld.Names[0]).Fatal("Can't parse the type of field as authorized string format")
+									return
+								}
 							}
 
-							if len(j.enum) > 0 {
-								p.Enum = j.enum
+							if len(v.enum) > 0 {
+								p.Enum = v.enum
 							}
 
 							if p != nil {
@@ -346,17 +572,17 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 				// ArrayType
 				if tpa, ok := ts.Type.(*ast.ArrayType); ok {
 					entity := newEntity()
-					p, err := parseNamedType(f, tpa.Elt)
+					p, _, err := parseNamedType(f, tpa.Elt)
 					if err != nil {
-						logrus.WithError(err).Error("Can't parse the type of field in struct")
-						continue
+						logrus.WithError(err).Fatal("Can't parse the type of field in struct")
+						return
 					}
 
 					entity.Type = "array"
 					if p.Ref != "" {
-						entity.Items["$ref"] = p.Ref
+						entity.Items["$ref"] = itemData{value: p.Ref}
 					} else {
-						entity.Items["type"] = p.Type
+						entity.Items["type"] = itemData{value: p.Type}
 					}
 
 					spec.Components.Schemas[entityName] = entity
@@ -364,6 +590,74 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 			}
 		}
 	}
+
+	if !spec.withoutJsonapiIncludes {
+		for entityName := range jsonapiIncludesResources {
+			relations := getTransitiveRelations(entityName, jsonapiIncludesResources, true)
+
+			if len(relations) > 0 {
+				e := spec.Components.Schemas[entityName]
+				_, ok := e.Properties["includes"]
+				if !ok {
+					e.Properties["includes"] = schema{
+						Nullable: true,
+						Type:     "array",
+						Items:    make(map[string]itemData),
+					}
+				}
+
+				for _, relation := range relations {
+					s := &schema{
+						Ref: "#/components/schemas/" + relation + "Data",
+					}
+
+					includesAnyOf := e.Properties["includes"].Items["anyOf"]
+					includesAnyOf.schemas = append(includesAnyOf.schemas, *s)
+					sort.Sort(includesAnyOf.schemas)
+					e.Properties["includes"].Items["anyOf"] = includesAnyOf
+				}
+			}
+		}
+	}
+}
+
+func getTransitiveRelations(entityName string, data map[string][]string, root bool) []string {
+	relationsMap := make(map[string]bool)
+	if !root {
+		relationsMap[entityName] = true
+	}
+	if _, ok := data[entityName]; !ok || len(data[entityName]) != 0 {
+		for _, v := range data[entityName] {
+			if (v == entityName && root) || v != entityName {
+				deps := getTransitiveRelations(v, data, false)
+				for _, d := range deps {
+					relationsMap[d] = true
+				}
+			}
+		}
+	}
+
+	relations := make([]string, 0, len(relationsMap))
+	for k := range relationsMap {
+		relations = append(relations, k)
+	}
+	return relations
+}
+
+func appendOnce(a []string, b []string) []string {
+	r := a
+	for _, c := range b {
+		e := false
+		for _, d := range a {
+			if c == d {
+				e = true
+			}
+		}
+		if !e {
+			r = append(r, c)
+		}
+	}
+	return r
 }
 
 func (spec *openAPI) AddAction(path, verb string, a action) {

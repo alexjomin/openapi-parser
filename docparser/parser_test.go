@@ -16,6 +16,13 @@ type parseJSONTagTestCase struct {
 	expectedError   string
 }
 
+type parseValidateTagTestCase struct {
+	description         string
+	field               *ast.Field
+	expectedValidateTag validateTagInfo
+	expectedError       string
+}
+
 type parseIdentPropertyTestCase struct {
 	description    string
 	expr           *ast.Ident
@@ -47,14 +54,14 @@ func TestParseFile(t *testing.T) {
 		{
 			description:         "should parse incorrect file",
 			goFilePath:          "../Makefile",
-			expectedError:       "1:1: expected 'package', found 'IDENT' install (and 1 more errors)",
+			expectedError:       "1:1: expected 'package', found '.' (and 1 more errors)",
 			expectedFilePackage: 0,
 		},
 		{
 			description:         "should parse file",
-			goFilePath:          "datatest/user.go",
+			goFilePath:          "../datatest/user/components.go",
 			expectedFilePackage: 1,
-			expectedFileName:    "cmd",
+			expectedFileName:    "user",
 		},
 	}
 	for _, tc := range testCases {
@@ -107,21 +114,21 @@ func TestParseNamedType(t *testing.T) {
 		{
 			description: "Should parse *ast.ArrayType with know type",
 			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "time"}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
-				"type": "string",
+			expectedSchema: &schema{Type: "array", Items: map[string]itemData{
+				"type": itemData{value: "string"},
 			}},
 		},
 		{
 			description: "Should parse *ast.ArrayType with unknown type",
 			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "unknown"}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
-				"$ref": "#/components/schemas/unknown",
+			expectedSchema: &schema{Type: "array", Items: map[string]itemData{
+				"$ref": itemData{value: "#/components/schemas/unknown"},
 			}},
 		},
 		{
 			description:   "Should throw error when parse *ast.StructType",
 			expr:          &ast.StructType{},
-			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+			expectedError: "expr (&{Struct:0 Fields:<nil> Incomplete:false}) not yet unsupported",
 		},
 		{
 			description: "Should throw error when parse *ast.MapType[nil]nil",
@@ -129,7 +136,7 @@ func TestParseNamedType(t *testing.T) {
 				Key:   nil,
 				Value: nil,
 			},
-			expectedError: "expr (&{%!s(token.Pos=0) <nil> <nil>}) not yet unsupported",
+			expectedError: "expr (<nil>) type (<nil>) is unsupported for a schema",
 		},
 		{
 			description: "Should throw error when parse *ast.MapType[string]interface{}",
@@ -137,7 +144,7 @@ func TestParseNamedType(t *testing.T) {
 				Key:   &ast.Ident{Name: "string"},
 				Value: &ast.InterfaceType{},
 			},
-			expectedError: "expr (&{%!s(token.Pos=0) string %!s(*ast.InterfaceType=&{0 <nil> false})}) not yet unsupported",
+			expectedError: "expr (&{Interface:0 Methods:<nil> Incomplete:false}) not yet unsupported",
 		},
 		{
 			description: "Should parse *ast.MapType[string]string",
@@ -169,12 +176,12 @@ func TestParseNamedType(t *testing.T) {
 				Key:   &ast.Ident{Name: "Object"},
 				Value: &ast.Ident{Name: "Pet"},
 			},
-			expectedError: "expr (&{%!s(token.Pos=0) Object Pet}) not yet unsupported",
+			expectedError: "keys can only be of type string",
 		},
 		{
 			description:   "Should throw error when parse *ast.InterfaceType",
 			expr:          &ast.InterfaceType{},
-			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+			expectedError: "expr (&{Interface:0 Methods:<nil> Incomplete:false}) not yet unsupported",
 		},
 		{
 			description:    "Should parse *ast.SelectorExpr",
@@ -185,26 +192,26 @@ func TestParseNamedType(t *testing.T) {
 		{
 			description: "Should parse correctly a selector of an array of pointer of unknown type",
 			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "unknown"}}}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
-				"$ref": "#/components/schemas/unknown",
+			expectedSchema: &schema{Type: "array", Items: map[string]itemData{
+				"$ref": itemData{value: "#/components/schemas/unknown"},
 			}},
 		},
 		{
 			description: "Should parse correctly a selector of an array of pointer of time type",
 			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "time"}}}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
-				"type": "string",
+			expectedSchema: &schema{Type: "array", Items: map[string]itemData{
+				"type": itemData{value: "string"},
 			}},
 		},
 		{
 			description:   "Should return  error for unsupported types",
 			expr:          &ast.FuncType{},
-			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) type (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) is unsupported for a schema",
+			expectedError: "expr (&{Func:0 Params:<nil> Results:<nil>}) type (&{Func:0 Params:<nil> Results:<nil>}) is unsupported for a schema",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			schema, err := parseNamedType(tc.gofile, tc.expr)
+			schema, _, err := parseNamedType(tc.gofile, tc.expr)
 			if len(tc.expectedError) > 0 {
 				if (err != nil) && (err.Error() != tc.expectedError) {
 					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
@@ -229,9 +236,73 @@ func TestParseNamedType(t *testing.T) {
 		})
 	}
 }
+
 func TestParseJSONTag(t *testing.T) {
 	testCases := []parseJSONTagTestCase{
 		{
+			description: "Should parse json tag value with value 'jsontagname,omitempty'",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\"jsontagname,omitempty\"`",
+				},
+			},
+			expectedJSONTag: jsonTagInfo{
+				name:      "jsontagname",
+				omitempty: true,
+			},
+		},
+		{
+			description: "Should parse json tag value with value ',omitempty'",
+			field: &ast.Field{
+				Names: []*ast.Ident{
+					&ast.Ident{
+						Name: "jsonTagName",
+					},
+				},
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\",omitempty\"`",
+				},
+			},
+			expectedJSONTag: jsonTagInfo{
+				name:      "jsonTagName",
+				omitempty: true,
+			},
+		},
+		{
+			description: "Should parse json tag value with value ',string'",
+			field: &ast.Field{
+				Names: []*ast.Ident{
+					&ast.Ident{
+						Name: "jsonTagName",
+					},
+				},
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\",string\"`",
+				},
+			},
+			expectedJSONTag: jsonTagInfo{
+				name:     "jsonTagName",
+				asString: true,
+			},
+		},
+		{
+			description: "Should fail with invalid syntax in tag value",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "Test",
+				},
+			},
+			expectedJSONTag: jsonTagInfo{},
+			expectedError:   "invalid syntax",
+		}, {
 			description:     "Should not set name in jsontag",
 			field:           &ast.Field{},
 			expectedJSONTag: jsonTagInfo{},
@@ -273,18 +344,6 @@ func TestParseJSONTag(t *testing.T) {
 			expectedJSONTag: jsonTagInfo{},
 		},
 		{
-			description: "Should fail with invalid syntax in tag value",
-			field: &ast.Field{
-				Tag: &ast.BasicLit{
-					ValuePos: 0,
-					Kind:     0,
-					Value:    "Test",
-				},
-			},
-			expectedJSONTag: jsonTagInfo{},
-			expectedError:   "invalid syntax",
-		},
-		{
 			description: "Should parse tag value",
 			field: &ast.Field{
 				Tag: &ast.BasicLit{
@@ -305,8 +364,7 @@ func TestParseJSONTag(t *testing.T) {
 				},
 			},
 			expectedJSONTag: jsonTagInfo{
-				ignore:   true,
-				required: false,
+				omitted: true,
 			},
 		},
 		{
@@ -320,55 +378,6 @@ func TestParseJSONTag(t *testing.T) {
 			},
 			expectedJSONTag: jsonTagInfo{
 				name: "jsontagname",
-			},
-		},
-		{
-			description: "Should parse json tag value and validate",
-			field: &ast.Field{
-				Tag: &ast.BasicLit{
-					ValuePos: 0,
-					Kind:     0,
-					Value:    "`json:\"jsontagname\" validate:\"required\"`",
-				},
-			},
-			expectedJSONTag: jsonTagInfo{
-				required: true,
-				name:     "jsontagname",
-			},
-		},
-		{
-			description: "Should parse json tag value and validate with enum",
-			field: &ast.Field{
-				Tag: &ast.BasicLit{
-					ValuePos: 0,
-					Kind:     0,
-					Value:    "`json:\"jsontagname\" validate:\"required,enum=a b\"`",
-				},
-			},
-			expectedJSONTag: jsonTagInfo{
-				required: true,
-				name:     "jsontagname",
-				enum:     []string{"a", "b"},
-			},
-		},
-		{
-			description: "Should use Tag name rather than ident name",
-			field: &ast.Field{
-				Tag: &ast.BasicLit{
-					ValuePos: 0,
-					Kind:     0,
-					Value:    "`json:\"jsontagname\" validate:\"required,enum=a b\"`",
-				},
-				Names: []*ast.Ident{
-					&ast.Ident{
-						Name: "testName",
-					},
-				},
-			},
-			expectedJSONTag: jsonTagInfo{
-				required: true,
-				name:     "jsontagname",
-				enum:     []string{"a", "b"},
 			},
 		},
 	}
@@ -388,6 +397,57 @@ func TestParseJSONTag(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tc.expectedJSONTag, parsedJSONTag) {
 				t.Errorf("got: %v, want: %v", parsedJSONTag, tc.expectedJSONTag)
+			}
+		})
+	}
+}
+
+func TestParseValidateTag(t *testing.T) {
+	testCases := []parseValidateTagTestCase{
+		{
+			description: "Should read required validation",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\"jsontagname\" validate:\"required\"`",
+				},
+			},
+			expectedValidateTag: validateTagInfo{
+				required: true,
+			},
+		},
+		{
+			description: "Should read enum validation",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\"jsontagname\" validate:\"required,enum=a b\"`",
+				},
+			},
+			expectedValidateTag: validateTagInfo{
+				required: true,
+				enum:     []string{"a", "b"},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			parsedValidateTag, err := parseValidateTag(tc.field)
+			if len(tc.expectedError) > 0 {
+				if (err != nil) && (err.Error() != tc.expectedError) {
+					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)
+				}
+				if err == nil {
+					t.Fatalf("expected error: %v . Got nothing", tc.expectedError)
+				}
+			}
+			if (err != nil) && (len(tc.expectedError) == 0) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(tc.expectedValidateTag, parsedValidateTag) {
+				t.Errorf("got: %v, want: %v", parsedValidateTag, tc.expectedValidateTag)
 			}
 		})
 	}

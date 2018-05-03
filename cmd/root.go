@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	outputPath string
-	inputPath  string
+	outputPath             string
+	inputPath              string
+	withoutJsonapiIncludes bool
 )
 
 // RootCmd represents the root command
@@ -22,7 +23,7 @@ var RootCmd = &cobra.Command{
 	Short: "OpenAPI Parser ",
 	Long:  `Parse comments in code to generate an OpenAPI documentation`,
 	Run: func(cmd *cobra.Command, args []string) {
-		spec := docparser.NewOpenAPI()
+		spec := docparser.NewOpenAPI(withoutJsonapiIncludes)
 		spec.Parse(inputPath)
 		d, err := yaml.Marshal(&spec)
 		if err != nil {
@@ -44,4 +45,5 @@ func Execute() {
 func init() {
 	RootCmd.Flags().StringVar(&outputPath, "output", "openapi.yaml", "The output file")
 	RootCmd.Flags().StringVar(&inputPath, "path", ".", "The Folder to parse")
+	RootCmd.Flags().BoolVar(&withoutJsonapiIncludes, "without-jsonapi-includes", false, "Disable jsonapi 'include' property generation")
 }
