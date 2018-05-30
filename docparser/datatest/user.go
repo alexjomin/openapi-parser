@@ -98,3 +98,8 @@ type Foo2 struct {
 // Signals struct
 // @openapi:schema
 type Signals []Foo
+
+// @openapi:info
+//  version: 0.0.1
+//  title: Some cool title
+//  description: Awesome description

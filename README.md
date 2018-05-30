@@ -8,6 +8,19 @@ Parse openAPI from go comments in handlers and structs
 
 ## Comments
 
+## Infos
+
+The comments use the yaml syntax of the openapi specs. Just use the tag `@openapi:info` in your comments before the comments in which you want to set the openapi info fields.
+
+```golang
+// @openapi:info
+//  version: 0.0.1
+//  title: Some cool title
+//  description: Awesome description
+```
+
+Note that only the first declaration of your info fields will be kept and inserted in the final yaml description file.
+
 ### Path
 
 The comments use the yaml syntax of the openapi specs. Just `@openapi:path` before the handler

@@ -14,6 +14,7 @@ import (
 var (
 	regexpPath   = regexp.MustCompile("@openapi:path\n([^@]*)$")
 	rexexpSchema = regexp.MustCompile(`@openapi:schema:?(\w+)?:?(?:\[([\w,]+)\])?`)
+	regexpInfo   = regexp.MustCompile("@openapi:info\n([^@]*)$")
 	tab          = regexp.MustCompile(`\t`)
 )
 
@@ -163,6 +164,7 @@ func (spec *openAPI) Parse(path string) {
 	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if validatePath(path) {
 			astFile, _ := parseFile(path)
+			spec.parseInfos(astFile)
 			spec.parseSchemas(astFile)
 			spec.parsePaths(astFile)
 		}
@@ -369,4 +371,71 @@ func (spec *openAPI) AddAction(path, verb string, a action) {
 		spec.Paths[path] = make(map[string]action)
 	}
 	spec.Paths[path][verb] = a
+}
+
+func (spec *openAPI) parseInfos(f *ast.File) {
+	for _, s := range f.Comments {
+		t := s.Text()
+		// Test if comment is an info block
+		a := regexpInfo.FindSubmatch([]byte(t))
+		if len(a) == 0 {
+			continue
+		}
+
+		// Replacing tab with spaces
+		content := tab.ReplaceAllString(string(a[1]), "  ")
+
+		// Unmarshal yaml
+		infos := make(map[string]string)
+		err := yaml.Unmarshal([]byte(content), &infos)
+		if err != nil {
+			logrus.
+				WithError(err).
+				WithField("content", content).
+				Error("Unable to unmarshal infos")
+			continue
+		}
+
+		version := infos["version"]
+		if spec.Info.Version != "" && spec.Info.Version != version {
+			logrus.
+				WithField("version", spec.Info.Version).
+				WithField("version_scanned", version).
+				Warn("Version already exists and is different!")
+		} else {
+			logrus.
+				WithField("field", "version").
+				WithField("value", version).
+				Info("Parsing info")
+			spec.Info.Version = version
+		}
+
+		title := infos["title"]
+		if spec.Info.Title != "" && spec.Info.Title != title {
+			logrus.
+				WithField("title", spec.Info.Title).
+				WithField("title_scanned", title).
+				Warn("Title already exists and is different!")
+		} else {
+			logrus.
+				WithField("field", "title").
+				WithField("value", title).
+				Info("Parsing info")
+			spec.Info.Title = title
+		}
+
+		description := infos["description"]
+		if spec.Info.Description != "" && spec.Info.Description != description {
+			logrus.
+				WithField("description", spec.Info.Description).
+				WithField("description_scanned", description).
+				Warn("Description already exists and is different!")
+		} else {
+			logrus.
+				WithField("field", "description").
+				WithField("value", description).
+				Info("Parsing info")
+			spec.Info.Description = description
+		}
+	}
 }
