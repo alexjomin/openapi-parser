@@ -108,7 +108,17 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
 		t, _ := parseNamedType(gofile, ftpe.X)
 		return t, nil
 	case *ast.MapType:
-		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		k, kerr := parseNamedType(gofile, ftpe.Key)
+		v, verr := parseNamedType(gofile, ftpe.Value)
+		if kerr != nil || verr != nil || k.Type != "string" {
+			// keys can only be of type string
+			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		}
+
+		p.Type = "object"
+		p.AdditionalProperties = v
+
+		return &p, nil
 	case *ast.InterfaceType:
 		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
 	default:
