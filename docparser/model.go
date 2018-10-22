@@ -87,7 +87,7 @@ type schema struct {
 	Ref                  string            `yaml:"$ref,omitempty"`
 	Enum                 []string          `yaml:",omitempty"`
 	Properties           map[string]schema `yaml:",omitempty"`
-	AdditionalProperties bool              `yaml:"additionalProperties,omitempty"`
+	AdditionalProperties *schema           `yaml:"additionalProperties,omitempty"`
 	OneOf                []schema          `yaml:"oneOf,omitempty"`
 }
 
@@ -283,7 +283,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 					e := newEntity()
 					e.Type = "object"
-					e.AdditionalProperties = true
+					e.AdditionalProperties = &schema{}
 
 					// map[string]interface{}
 					if _, ok := mp.Value.(*ast.InterfaceType); ok {

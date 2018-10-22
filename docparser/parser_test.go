@@ -5,6 +5,8 @@ import (
 	"go/token"
 	"reflect"
 	"testing"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 type parseJSONTagTestCase struct {
@@ -122,9 +124,52 @@ func TestParseNamedType(t *testing.T) {
 			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
 		},
 		{
-			description:   "Should throw error when parse *ast.MapType",
-			expr:          &ast.MapType{},
+			description: "Should throw error when parse *ast.MapType[nil]nil",
+			expr: &ast.MapType{
+				Key:   nil,
+				Value: nil,
+			},
 			expectedError: "expr (&{%!s(token.Pos=0) <nil> <nil>}) not yet unsupported",
+		},
+		{
+			description: "Should throw error when parse *ast.MapType[string]interface{}",
+			expr: &ast.MapType{
+				Key:   &ast.Ident{Name: "string"},
+				Value: &ast.InterfaceType{},
+			},
+			expectedError: "expr (&{%!s(token.Pos=0) string %!s(*ast.InterfaceType=&{0 <nil> false})}) not yet unsupported",
+		},
+		{
+			description: "Should parse *ast.MapType[string]string",
+			expr: &ast.MapType{
+				Key:   &ast.Ident{Name: "string"},
+				Value: &ast.Ident{Name: "string"},
+			},
+			expectedSchema: &schema{
+				Type:                 "object",
+				AdditionalProperties: &schema{Type: "string"},
+			},
+		},
+		{
+			description: "Should parse *ast.MapType[string]Pet",
+			expr: &ast.MapType{
+				Key:   &ast.Ident{Name: "string"},
+				Value: &ast.Ident{Name: "Pet"},
+			},
+			expectedSchema: &schema{
+				Type: "object",
+				AdditionalProperties: &schema{
+					Ref: "#/components/schemas/Pet",
+				},
+			},
+		},
+		{
+			description: "Should throw error when parse *ast.MapType[Object]Pet",
+			expr: &ast.MapType{
+				Key:   &ast.Ident{Name: "Object"},
+				Value: &ast.Ident{Name: "Pet"},
+			},
+			expectedError: "expr (&{%!s(token.Pos=0) Object Pet}) not yet unsupported",
 		},
 		{
 			description:   "Should throw error when parse *ast.InterfaceType",
@@ -171,8 +216,15 @@ func TestParseNamedType(t *testing.T) {
 			if (err != nil) && (len(tc.expectedError) == 0) {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(tc.expectedSchema, schema) {
-				t.Errorf("got: %v, want: %v", schema, tc.expectedSchema)
+
+			bSchema, serr := yaml.Marshal(&schema)
+			bExpectedSchema, eserr := yaml.Marshal(&tc.expectedSchema)
+			if serr != nil || eserr != nil {
+				t.Error(err)
+			}
+			if !reflect.DeepEqual(bSchema, bExpectedSchema) {
+				t.Errorf("got: %+v, want: %+v\n", schema, tc.expectedSchema)
+				t.Errorf("got: %+v, want: %+v\n", schema.AdditionalProperties, tc.expectedSchema.AdditionalProperties)
 			}
 		})
 	}

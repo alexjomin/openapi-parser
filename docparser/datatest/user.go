@@ -66,21 +66,28 @@ func GetUser() {}
 //								$ref: "#/components/schemas/Pet"
 func PostFoo() {}
 
+// MapStringString type
+// @openapi:schema
+type MapStringString map[string]string
+
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	ID              bson.ObjectId `json:"id"`
-	String          string        `json:"string,omitempty" validate:"required"`
-	Int             int           `json:"int,omitempty"`
-	PointerOfString *string       `json:"pointerOfString"`
-	SliceOfString   []string      `json:"sliceofString"`
-	SliceOfInt      []int         `json:"sliceofInt"`
-	Struct          Foo           `json:"struct"`
-	SliceOfStruct   []Foo         `json:"sliceOfStruct"`
-	PointerOfStruct *Foo          `json:"pointerOfStruct"`
-	Time            time.Time     `json:"time"`
-	PointerOfTime   *time.Time    `json:"pointerOfTime"`
-	EnumTest        string        `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
+	ID              bson.ObjectId     `json:"id"`
+	String          string            `json:"string,omitempty" validate:"required"`
+	Int             int               `json:"int,omitempty"`
+	PointerOfString *string           `json:"pointerOfString"`
+	SliceOfString   []string          `json:"sliceofString"`
+	SliceOfInt      []int             `json:"sliceofInt"`
+	Struct          Foo               `json:"struct"`
+	SliceOfStruct   []Foo             `json:"sliceOfStruct"`
+	PointerOfStruct *Foo              `json:"pointerOfStruct"`
+	Time            time.Time         `json:"time"`
+	PointerOfTime   *time.Time        `json:"pointerOfTime"`
+	EnumTest        string            `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
+	StrData         map[string]string `json:"strData"`
+	Children        map[string]Pet    `json:"children"`
+	IntData         map[string]int    `json:"IntData"`
 }
 
 // Foo struct
