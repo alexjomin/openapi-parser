@@ -40,7 +40,7 @@ The comments use the yaml syntax of the openapi specs. Just `@openapi:path` befo
 //						schema:
 //							type: "array"
 //							items:
-//								$ref: "#/definitions/Foo"
+//								$ref: "#/components/schemas/Pet"
 //		parameters:
 //			- in: path
 //				name: deviceId
@@ -48,7 +48,7 @@ The comments use the yaml syntax of the openapi specs. Just `@openapi:path` befo
 //					type: integer
 //				required: true
 //				description: Numeric ID of the user to get
-func GetUser(w http.ResponseWriter, r *http.Request) {}
+func GetPets(w http.ResponseWriter, r *http.Request) {}
 ```
 
 ### Schema
@@ -58,9 +58,9 @@ The parser will parse the struct to create the shema, just add `@openapi:schema`
 By default the name of the schema will be the name of the struct. You can overide it with `@openapi:schema:CustomName`. **Warning not all type are handled for now, work in progress.**
 
 ```go
-// Foo struct
+// Pet struct
 // @openapi:schema
-type Pet Foo {
+type Pet struct {
 	String          string     `json:"string,omitempty"`
 	Int             int        `json:"int,omitempty"`
 	PointerOfString *string    `json:"pointerOfString"`
@@ -79,16 +79,21 @@ type Pet Foo {
 Parse comments in code to generate an OpenAPI documentation
 
 Usage:
-  root [flags]
+  openapi-parser [flags]
+  openapi-parser [command]
+
+Available Commands:
+  help        Help about any command
+  merge       Merge multiple openapi specification into one
 
 Flags:
-  -h, --help            help for root
+  -h, --help            help for openapi-parser
       --output string   The output file (default "openapi.yaml")
       --path string     The Folder to parse (default ".")
 ```
 
 ### Example
 
-`parser-openapi`
+`openapi-parser`
 
-`parser-openapi --path /my/path --output my-openapi.yaml`
+`openapi-parser --path /my/path --output my-openapi.yaml`
