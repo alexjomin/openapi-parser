@@ -4,3 +4,4 @@ openapi-parser
 *.tmp
 **/swagger.json
 **/api-spec-converter-errors.log
+.idea

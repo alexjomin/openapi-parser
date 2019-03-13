@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -39,13 +39,13 @@ func NewOpenAPI(withoutJsonapiIncludes bool) openAPI {
 	spec.Openapi = "3.0.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
-	spec.Components.Schemas = make(map[string]schema)
+	spec.Components.Schemas = make(map[string]interface{})
 	spec.withoutJsonapiIncludes = withoutJsonapiIncludes
 	return spec
 }
 
 type Components struct {
-	Schemas         map[string]schema
+	Schemas         map[string]interface{}     // schema or composedSchema
 	SecuritySchemes map[string]securitySchemes `yaml:"securitySchemes,omitempty"`
 }
 
@@ -117,6 +117,10 @@ func newEntity() schema {
 	e.Properties = make(map[string]schema)
 	e.Items = make(map[string]itemData)
 	return e
+}
+
+type composedSchema struct {
+	AllOf []*schema `yaml:"allOf"`
 }
 
 type schema struct {
@@ -504,6 +508,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 				// StructType (with json tags)
 				if tpe, ok := ts.Type.(*ast.StructType); ok && !isJSONAPIStruct {
+					var cs *composedSchema
 					e := newEntity()
 					e.Type = "object"
 
@@ -554,19 +559,30 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 								e.Properties[j.name] = *p
 							}
 
-							// @ToDO for composition
 						} else {
-							// switch t := fld.Type.(type) {
-							// case *ast.Ident:
-							// 	//fmt.Printf("indent : %v", t)
-							// case *ast.SelectorExpr:
-							// 	//fmt.Printf("SelectorExpr : %v", t)
-							// case *ast.StarExpr:
-							// 	//fmt.Printf("StarExpr : %v", t)
-							// }
+							// composition
+							if cs == nil {
+								cs = &composedSchema{
+									AllOf: make([]*schema, 0),
+								}
+							}
+
+							p, err := parseNamedType(f, fld.Type)
+							if err != nil {
+								logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
+								continue
+							}
+
+							cs.AllOf = append(cs.AllOf, p)
 						}
 					}
-					spec.Components.Schemas[entityName] = e
+
+					if cs == nil {
+						spec.Components.Schemas[entityName] = e
+					} else {
+						cs.AllOf = append(cs.AllOf, &e)
+						spec.Components.Schemas[entityName] = cs
+					}
 				}
 
 				// ArrayType
