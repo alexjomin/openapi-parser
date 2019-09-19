@@ -88,6 +88,7 @@ type Pet struct {
 	StrData         map[string]string `json:"strData"`
 	Children        map[string]Pet    `json:"children"`
 	IntData         map[string]int    `json:"IntData"`
+	ByteData        []byte            `json:"ByteData"`
 }
 
 // Foo struct
