@@ -92,6 +92,11 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
 		return t, nil
 	case *ast.ArrayType: // slice type
 		cp, _ := parseNamedType(gofile, ftpe.Elt)
+		if cp.Format == "binary" {
+			p.Type = "string"
+			p.Format = "binary"
+			return &p, nil
+		}
 		p.Type = "array"
 		p.Items = map[string]string{}
 		if cp.Type != "" {
@@ -135,10 +140,15 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 		t = "string"
 	case "int":
 		t = "integer"
+	case "int8":
+		t = "integer"
+		format = "int8"
 	case "int64":
 		t = "integer"
+		format = "int64"
 	case "int32":
 		t = "integer"
+		format = "int32"
 	case "time":
 		t = "string"
 		format = "date-time"
@@ -146,6 +156,9 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 		t = "number"
 	case "bool":
 		t = "boolean"
+	case "byte":
+		t = "string"
+		format = "binary"
 	default:
 		t = expr.Name
 		err = fmt.Errorf("Can't set the type %s", expr.Name)

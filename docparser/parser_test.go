@@ -100,6 +100,11 @@ func TestParseNamedType(t *testing.T) {
 			expectedSchema: &schema{Type: "string", Format: "date-time"},
 		},
 		{
+			description:    "Should parse *ast.Ident with name byte",
+			expr:           &ast.Ident{Name: "byte"},
+			expectedSchema: &schema{Type: "string", Format: "binary"},
+		},
+		{
 			description:    "Should parse *ast.StarExpr and set Nullable",
 			expr:           &ast.StarExpr{X: &ast.Ident{Name: "time"}},
 			expectedSchema: &schema{Type: "string", Format: "date-time", Nullable: true},
@@ -110,6 +115,11 @@ func TestParseNamedType(t *testing.T) {
 			expectedSchema: &schema{Type: "array", Items: map[string]string{
 				"type": "string",
 			}},
+		},
+		{
+			description:    "Should parse *ast.ArrayType with byte type",
+			expr:           &ast.ArrayType{Elt: &ast.Ident{Name: "byte"}},
+			expectedSchema: &schema{Type: "string", Format: "binary"},
 		},
 		{
 			description: "Should parse *ast.ArrayType with unknown type",
@@ -422,14 +432,16 @@ func TestParseIdentProperty(t *testing.T) {
 			expectedType: "integer",
 		},
 		{
-			description:  "parse int64 ident type",
-			expr:         &ast.Ident{Name: "int64"},
-			expectedType: "integer",
+			description:    "parse int64 ident type",
+			expr:           &ast.Ident{Name: "int64"},
+			expectedType:   "integer",
+			expectedFormat: "int64",
 		},
 		{
-			description:  "parse int32 ident type",
-			expr:         &ast.Ident{Name: "int32"},
-			expectedType: "integer",
+			description:    "parse int32 ident type",
+			expr:           &ast.Ident{Name: "int32"},
+			expectedType:   "integer",
+			expectedFormat: "int32",
 		},
 		{
 			description:    "parse time ident type",
