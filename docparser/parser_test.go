@@ -47,7 +47,7 @@ func TestParseFile(t *testing.T) {
 		{
 			description:         "should parse incorrect file",
 			goFilePath:          "../Makefile",
-			expectedError:       "1:1: expected 'package', found 'IDENT' install (and 1 more errors)",
+			expectedError:       "1:1: expected 'package', found install (and 1 more errors)",
 			expectedFilePackage: 0,
 		},
 		{
