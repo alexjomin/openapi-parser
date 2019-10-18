@@ -1,2 +1,7 @@
-vendor
+vendor/
 .idea
+openapi-parser
+*-generated.yaml
+*.tmp
+**/swagger.json
+**/api-spec-converter-errors.log

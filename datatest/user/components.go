@@ -1,4 +1,4 @@
-package cmd
+package user
 
 import (
 	"time"
@@ -88,13 +88,12 @@ type Pet struct {
 	StrData         map[string]string `json:"strData"`
 	Children        map[string]Pet    `json:"children"`
 	IntData         map[string]int    `json:"IntData"`
-	ByteData        []byte            `json:"ByteData"`
 }
 
 // Foo struct
 // @openapi:schema
 type Foo struct {
-	String string `json:"string,omitempty"`
+	String string `json:"string"`
 }
 
 // Foo2 struct

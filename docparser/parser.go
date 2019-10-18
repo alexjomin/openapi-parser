@@ -25,10 +25,89 @@ func parseFile(path string) (*ast.File, error) {
 }
 
 type jsonTagInfo struct {
-	name     string
-	ignore   bool
+	name      string
+	omitted   bool
+	omitempty bool
+	asString  bool
+}
+
+type validateTagInfo struct {
 	required bool
 	enum     []string
+}
+
+type jsonapiTagInfo struct {
+	name        string
+	isPrimary   bool
+	primaryType string
+	isAttribute bool
+	isRelation  bool
+	omitempty   bool
+}
+
+func haveTag(field *ast.Field, tagName string) (bool, error) {
+	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
+		tv, err := strconv.Unquote(field.Tag.Value)
+		if err != nil {
+			return false, err
+		}
+
+		if strings.TrimSpace(tv) != "" {
+			st := reflect.StructTag(tv)
+
+			return st.Get(tagName) != "", nil
+		}
+	}
+	return false, nil
+}
+
+func parseJSONAPITag(field *ast.Field) (ja jsonapiTagInfo, err error) {
+	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
+		tv, err := strconv.Unquote(field.Tag.Value)
+		if err != nil {
+			return ja, err
+		}
+
+		if strings.TrimSpace(tv) != "" {
+			st := reflect.StructTag(tv)
+
+			jsonapiContent := st.Get("jsonapi")
+			jsonapiData := strings.Split(jsonapiContent, ",")
+			if len(jsonapiData) >= 2 {
+				ja.isPrimary = jsonapiData[0] == "primary"
+				ja.isAttribute = jsonapiData[0] == "attr"
+				ja.isRelation = jsonapiData[0] == "relation"
+
+				if !ja.isPrimary && !ja.isAttribute && !ja.isRelation {
+					return ja, fmt.Errorf("can't be use a malformated tag (%s)", jsonapiContent)
+				}
+
+				if ja.isPrimary {
+					// TODO: support json:"id"
+					if strings.ToLower(field.Names[0].Name) == "id" {
+						ja.name = "id"
+						ja.primaryType = jsonapiData[1]
+					} else {
+						return ja, fmt.Errorf("can't have an primary field name without the name id")
+					}
+				} else {
+					if jsonapiData[1] == "" {
+						return ja, fmt.Errorf("can't have an empty field name (%s)", jsonapiContent)
+					}
+					ja.name = jsonapiData[1]
+				}
+			}
+			if len(jsonapiData) > 2 && jsonapiData[2] == "omitempty" {
+				if ja.isPrimary {
+					return ja, fmt.Errorf("omitempty can't be used with primary (%s)", jsonapiContent)
+				}
+				ja.omitempty = true
+			}
+
+			return ja, nil
+		}
+	}
+	return ja, nil
 }
 
 func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
@@ -44,90 +123,116 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 		if strings.TrimSpace(tv) != "" {
 			st := reflect.StructTag(tv)
 
-			jsonName := strings.Split(st.Get("json"), ",")[0]
+			jsonTags := strings.Split(st.Get("json"), ",")
+			jsonName := jsonTags[0]
 			if jsonName == "-" {
-				j.ignore = true
-				j.required = false
-				return j, nil
+				j.omitted = true
 			} else if jsonName != "" {
-				required := false
-				// https://github.com/go-playground/validator
-				// check if validate attr is active
-				validateData := strings.Split(st.Get("validate"), ",")
-				for _, v := range validateData {
-					if v == "required" {
-						required = true
-					}
-					if matches := enumRegex.FindStringSubmatch(v); len(matches) > 0 {
-						j.enum = strings.Fields(matches[1])
-					}
-				}
-
 				j.name = jsonName
-				j.required = required
-				j.ignore = false
-
-				return j, nil
 			}
+
+			if len(jsonTags) > 1 {
+				j.omitempty = jsonTags[1] == "omitempty"
+				j.asString = jsonTags[1] == "string"
+			}
+
+			return j, nil
 		}
 	}
+
 	return j, nil
 }
 
-func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
+func parseValidateTag(field *ast.Field) (v validateTagInfo, err error) {
+	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
+		tv, err := strconv.Unquote(field.Tag.Value)
+		if err != nil {
+			return v, err
+		}
+
+		if strings.TrimSpace(tv) != "" {
+			st := reflect.StructTag(tv)
+
+			// https://github.com/go-playground/validator.v9
+			validateData := strings.Split(st.Get("validate"), ",")
+
+			required := false
+			for _, vd := range validateData {
+				if vd == "required" {
+					required = true
+				}
+				if matches := enumRegex.FindStringSubmatch(vd); len(matches) > 0 {
+					v.enum = strings.Fields(matches[1])
+				}
+			}
+			v.required = required
+
+			return v, nil
+		}
+	}
+	return v, nil
+}
+
+func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, string, error) {
 	p := schema{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
 		t, format, err := parseIdentProperty(ftpe)
 		if err != nil {
 			p.Ref = "#/components/schemas/" + t
-			return &p, nil
+			return &p, t, nil
 		}
 		p.Type = t
 		p.Format = format
-		return &p, nil
+		return &p, t, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		t, _ := parseNamedType(gofile, ftpe.X)
-		t.Nullable = true
-		return t, nil
+		p, t, _ := parseNamedType(gofile, ftpe.X)
+		p.Nullable = true
+		return p, t, nil
 	case *ast.ArrayType: // slice type
-		cp, _ := parseNamedType(gofile, ftpe.Elt)
+		cp, t, _ := parseNamedType(gofile, ftpe.Elt)
 		if cp.Format == "binary" {
 			p.Type = "string"
 			p.Format = "binary"
-			return &p, nil
+			return &p, t, nil
 		}
 		p.Type = "array"
-		p.Items = map[string]string{}
+		p.Items = make(map[string]itemData)
 		if cp.Type != "" {
-			p.Items["type"] = cp.Type
+			p.Items["type"] = itemData{value: cp.Type}
 		}
 		if cp.Ref != "" {
-			p.Items["$ref"] = cp.Ref
+			p.Items["$ref"] = itemData{value: cp.Ref}
 		}
-		return &p, nil
+		return &p, t, nil
 	case *ast.StructType:
-		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		return nil, "", fmt.Errorf("expr (%+v) not yet unsupported", expr)
 	case *ast.SelectorExpr:
 		// @TODO ca va bugger ici !
-		t, _ := parseNamedType(gofile, ftpe.X)
-		return t, nil
+		p, t, _ := parseNamedType(gofile, ftpe.X)
+		return p, t, nil
 	case *ast.MapType:
-		k, kerr := parseNamedType(gofile, ftpe.Key)
-		v, verr := parseNamedType(gofile, ftpe.Value)
-		if kerr != nil || verr != nil || k.Type != "string" {
+		k, _, kerr := parseNamedType(gofile, ftpe.Key)
+		if kerr != nil {
+			return nil, "", kerr
+		}
+		if k.Type != "string" {
 			// keys can only be of type string
-			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+			return nil, "", fmt.Errorf("keys can only be of type string")
+		}
+		v, _, verr := parseNamedType(gofile, ftpe.Value)
+		if verr != nil {
+			return nil, "", verr
 		}
 
 		p.Type = "object"
 		p.AdditionalProperties = v
 
-		return &p, nil
+		return &p, p.Type, nil
 	case *ast.InterfaceType:
-		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		return nil, "", fmt.Errorf("expr (%+v) not yet unsupported", expr)
 	default:
-		return nil, fmt.Errorf("expr (%s) type (%s) is unsupported for a schema", ftpe, expr)
+		return nil, "", fmt.Errorf("expr (%+v) type (%+v) is unsupported for a schema", ftpe, expr)
 	}
 }
 
