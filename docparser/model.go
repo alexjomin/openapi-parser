@@ -25,6 +25,7 @@ type openAPI struct {
 	Paths      map[string]path
 	Tags       []tag `yaml:"tags,omitempty"`
 	Components Components
+	Security   []map[string][]string `yaml:"security,omitempty"`
 }
 
 type server struct {
@@ -47,8 +48,9 @@ type Components struct {
 }
 
 type securitySchemes struct {
-	Type  string
-	Flows map[string]flow
+	Type   string
+	Flows  map[string]flow
+	Scheme string `yaml:"scheme,omitempty"`
 }
 
 type flow struct {
