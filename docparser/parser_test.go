@@ -110,9 +110,9 @@ func TestParseNamedType(t *testing.T) {
 			expectedSchema: &schema{Type: "string", Format: "date-time", Nullable: true},
 		},
 		{
-			description: "Should parse *ast.ArrayType with know type",
+			description: "Should parse *ast.ArrayType with known type",
 			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "time"}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
+			expectedSchema: &schema{Type: "array", Items: map[string]interface{}{
 				"type": "string",
 			}},
 		},
@@ -124,8 +124,18 @@ func TestParseNamedType(t *testing.T) {
 		{
 			description: "Should parse *ast.ArrayType with unknown type",
 			expr:        &ast.ArrayType{Elt: &ast.Ident{Name: "unknown"}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
+			expectedSchema: &schema{Type: "array", Items: map[string]interface{}{
 				"$ref": "#/components/schemas/unknown",
+			}},
+		},
+		{
+			description: "Should parse *ast.ArrayType with array type",
+			expr:        &ast.ArrayType{Elt: &ast.ArrayType{Elt: &ast.Ident{Name: "float64"}}},
+			expectedSchema: &schema{Type: "array", Items: map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "number",
+				},
 			}},
 		},
 		{
@@ -195,14 +205,14 @@ func TestParseNamedType(t *testing.T) {
 		{
 			description: "Should parse correctly a selector of an array of pointer of unknown type",
 			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "unknown"}}}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
+			expectedSchema: &schema{Type: "array", Items: map[string]interface{}{
 				"$ref": "#/components/schemas/unknown",
 			}},
 		},
 		{
 			description: "Should parse correctly a selector of an array of pointer of time type",
 			expr:        &ast.SelectorExpr{X: &ast.ArrayType{Elt: &ast.StarExpr{X: &ast.Ident{Name: "time"}}}},
-			expectedSchema: &schema{Type: "array", Items: map[string]string{
+			expectedSchema: &schema{Type: "array", Items: map[string]interface{}{
 				"type": "string",
 			}},
 		},
