@@ -76,7 +76,7 @@ type tag struct {
 func newEntity() schema {
 	e := schema{}
 	e.Properties = make(map[string]schema)
-	e.Items = make(map[string]string)
+	e.Items = make(map[string]interface{})
 	return e
 }
 
@@ -85,16 +85,16 @@ type composedSchema struct {
 }
 
 type schema struct {
-	Nullable             bool              `yaml:"nullable,omitempty"`
-	Required             []string          `yaml:"required,omitempty"`
-	Type                 string            `yaml:",omitempty"`
-	Items                map[string]string `yaml:",omitempty"`
-	Format               string            `yaml:"format,omitempty"`
-	Ref                  string            `yaml:"$ref,omitempty"`
-	Enum                 []string          `yaml:",omitempty"`
-	Properties           map[string]schema `yaml:",omitempty"`
-	AdditionalProperties *schema           `yaml:"additionalProperties,omitempty"`
-	OneOf                []schema          `yaml:"oneOf,omitempty"`
+	Nullable             bool                   `yaml:"nullable,omitempty"`
+	Required             []string               `yaml:"required,omitempty"`
+	Type                 string                 `yaml:",omitempty"`
+	Items                map[string]interface{} `yaml:",omitempty"`
+	Format               string                 `yaml:"format,omitempty"`
+	Ref                  string                 `yaml:"$ref,omitempty"`
+	Enum                 []string               `yaml:",omitempty"`
+	Properties           map[string]schema      `yaml:",omitempty"`
+	AdditionalProperties *schema                `yaml:"additionalProperties,omitempty"`
+	OneOf                []schema               `yaml:"oneOf,omitempty"`
 }
 
 type items struct {

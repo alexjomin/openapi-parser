@@ -98,9 +98,12 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
 			return &p, nil
 		}
 		p.Type = "array"
-		p.Items = map[string]string{}
+		p.Items = map[string]interface{}{}
 		if cp.Type != "" {
 			p.Items["type"] = cp.Type
+			if len(cp.Items) != 0 {
+				p.Items["items"] = cp.Items
+			}
 		}
 		if cp.Ref != "" {
 			p.Items["$ref"] = cp.Ref
