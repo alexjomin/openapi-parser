@@ -48,7 +48,7 @@ func Test_validatePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := validatePath(tt.args.path); got != tt.want {
+			if got := validatePath(tt.args.path, []string{}); got != tt.want {
 				t.Errorf("validatePath() = %v, want %v", got, tt.want)
 			}
 		})
