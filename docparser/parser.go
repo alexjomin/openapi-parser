@@ -13,6 +13,7 @@ import (
 )
 
 var enumRegex = regexp.MustCompile(`enum=([\w ]+)`)
+var oneOfRegex = regexp.MustCompile(`oneof=([\w ]+)`) // validator.v9 enum tag is oneof
 
 func parseFile(path string) (*ast.File, error) {
 	data, err := ioutil.ReadFile(path) // just pass the file name
@@ -59,6 +60,9 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 						required = true
 					}
 					if matches := enumRegex.FindStringSubmatch(v); len(matches) > 0 {
+						j.enum = strings.Fields(matches[1])
+					}
+					if matches := oneOfRegex.FindStringSubmatch(v); len(matches) > 0 {
 						j.enum = strings.Fields(matches[1])
 					}
 				}
