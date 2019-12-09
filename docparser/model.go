@@ -145,9 +145,14 @@ type content struct {
 	Schema schema
 }
 
-func validatePath(path string) bool {
+func validatePath(path string, parseVendors []string) bool {
 	// vendoring path
 	if strings.Contains(path, "vendor") {
+		for _, vendorPath := range parseVendors {
+			if strings.Contains(path, vendorPath) {
+				return true
+			}
+		}
 		return false
 	}
 
@@ -164,11 +169,11 @@ func validatePath(path string) bool {
 	return true
 }
 
-func (spec *openAPI) Parse(path string) {
+func (spec *openAPI) Parse(path string, parseVendors []string) {
 	// fset := token.NewFileSet() // positions are relative to fset
 
 	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-		if validatePath(path) {
+		if validatePath(path, parseVendors) {
 			astFile, _ := parseFile(path)
 			spec.parseInfos(astFile)
 			spec.parseSchemas(astFile)
