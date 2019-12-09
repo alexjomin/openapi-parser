@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	outputPath string
-	inputPath  string
+	outputPath   string
+	inputPath    string
+	parseVendors []string
 )
 
 // RootCmd represents the root command
@@ -23,7 +24,7 @@ var RootCmd = &cobra.Command{
 	Long:  `Parse comments in code to generate an OpenAPI documentation`,
 	Run: func(cmd *cobra.Command, args []string) {
 		spec := docparser.NewOpenAPI()
-		spec.Parse(inputPath)
+		spec.Parse(inputPath, parseVendors)
 		d, err := yaml.Marshal(&spec)
 		if err != nil {
 			log.Fatalf("error: %v", err)
@@ -44,4 +45,5 @@ func Execute() {
 func init() {
 	RootCmd.Flags().StringVar(&outputPath, "output", "openapi.yaml", "The output file")
 	RootCmd.Flags().StringVar(&inputPath, "path", ".", "The Folder to parse")
+	RootCmd.Flags().StringArrayVar(&parseVendors, "parse-vendors", []string{}, "Give the vendor to parse")
 }

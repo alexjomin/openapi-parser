@@ -87,9 +87,10 @@ Available Commands:
   merge       Merge multiple openapi specification into one
 
 Flags:
-  -h, --help            help for openapi-parser
-      --output string   The output file (default "openapi.yaml")
-      --path string     The Folder to parse (default ".")
+  -h, --help                        help for openapi-parser
+      --output string               The output file (default "openapi.yaml")
+      --parse-vendors stringArray   Give the vendor to parse
+      --path string                 The Folder to parse (default ".")
 ```
 
 ### Example
@@ -97,3 +98,5 @@ Flags:
 `openapi-parser`
 
 `openapi-parser --path /my/path --output my-openapi.yaml`
+
+`openapi-parser --path /my/path --output my-openapi.yaml --parse-vendors github.com/my/library-to-parse`
