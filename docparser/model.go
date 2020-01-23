@@ -49,7 +49,7 @@ type Components struct {
 
 type securitySchemes struct {
 	Type   string
-	Flows  map[string]flow
+	Flows  map[string]flow `yaml:"flows,omitempty"`
 	Scheme string `yaml:"scheme,omitempty"`
 }
 
