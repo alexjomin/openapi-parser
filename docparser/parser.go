@@ -78,24 +78,31 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	return j, nil
 }
 
-func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
+func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, error) {
 	p := schema{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
 		t, format, err := parseIdentProperty(ftpe)
 		if err != nil {
-			p.Ref = "#/components/schemas/" + t
+			p.Ref = "#/components/schemas/"
+			if sel != nil {
+				p.Ref += sel.Name
+				p.metadata.RealName = sel.Name
+			} else {
+				p.Ref += t
+				p.metadata.RealName = t
+			}
 			return &p, nil
 		}
 		p.Type = t
 		p.Format = format
 		return &p, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		t, _ := parseNamedType(gofile, ftpe.X)
+		t, _ := parseNamedType(gofile, ftpe.X, nil)
 		t.Nullable = true
 		return t, nil
 	case *ast.ArrayType: // slice type
-		cp, _ := parseNamedType(gofile, ftpe.Elt)
+		cp, _ := parseNamedType(gofile, ftpe.Elt, nil)
 		if cp.Format == "binary" {
 			p.Type = "string"
 			p.Format = "binary"
@@ -116,12 +123,11 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
 	case *ast.StructType:
 		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
 	case *ast.SelectorExpr:
-		// @TODO ca va bugger ici !
-		t, _ := parseNamedType(gofile, ftpe.X)
+		t, _ := parseNamedType(gofile, ftpe.X, ftpe.Sel)
 		return t, nil
 	case *ast.MapType:
-		k, kerr := parseNamedType(gofile, ftpe.Key)
-		v, verr := parseNamedType(gofile, ftpe.Value)
+		k, kerr := parseNamedType(gofile, ftpe.Key, nil)
+		v, verr := parseNamedType(gofile, ftpe.Value, nil)
 		if kerr != nil || verr != nil || k.Type != "string" {
 			// keys can only be of type string
 			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
@@ -132,7 +138,8 @@ func parseNamedType(gofile *ast.File, expr ast.Expr) (*schema, error) {
 
 		return &p, nil
 	case *ast.InterfaceType:
-		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		p.Ref = "#/components/schemas/AnyValue"
+		return &p, nil
 	default:
 		return nil, fmt.Errorf("expr (%s) type (%s) is unsupported for a schema", ftpe, expr)
 	}

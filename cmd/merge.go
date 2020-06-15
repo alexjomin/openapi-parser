@@ -67,6 +67,9 @@ var mergeCmd = &cobra.Command{
 			}
 
 			for k, v := range spec.Components.Schemas {
+				if k == "AnyValue" {
+					continue
+				}
 				s, ok := main.Components.Schemas[k]
 				if ok {
 					result := reflect.DeepEqual(s, v)

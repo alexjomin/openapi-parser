@@ -152,12 +152,17 @@ func TestParseNamedType(t *testing.T) {
 			expectedError: "expr (&{%!s(token.Pos=0) <nil> <nil>}) not yet unsupported",
 		},
 		{
-			description: "Should throw error when parse *ast.MapType[string]interface{}",
+			description: "Should parse *ast.MapType[string]interface{}",
 			expr: &ast.MapType{
 				Key:   &ast.Ident{Name: "string"},
 				Value: &ast.InterfaceType{},
 			},
-			expectedError: "expr (&{%!s(token.Pos=0) string %!s(*ast.InterfaceType=&{0 <nil> false})}) not yet unsupported",
+			expectedSchema: &schema{
+				Type: "object",
+				AdditionalProperties: &schema{
+					Ref: "#/components/schemas/AnyValue",
+				},
+			},
 		},
 		{
 			description: "Should parse *ast.MapType[string]string",
@@ -192,9 +197,11 @@ func TestParseNamedType(t *testing.T) {
 			expectedError: "expr (&{%!s(token.Pos=0) Object Pet}) not yet unsupported",
 		},
 		{
-			description:   "Should throw error when parse *ast.InterfaceType",
-			expr:          &ast.InterfaceType{},
-			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+			description: "Should parse Interface type",
+			expr:        &ast.InterfaceType{},
+			expectedSchema: &schema{
+				Ref: "#/components/schemas/AnyValue",
+			},
 		},
 		{
 			description:    "Should parse *ast.SelectorExpr",
@@ -224,7 +231,7 @@ func TestParseNamedType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			schema, err := parseNamedType(tc.gofile, tc.expr)
+			schema, err := parseNamedType(tc.gofile, tc.expr, nil)
 			if len(tc.expectedError) > 0 {
 				if (err != nil) && (err.Error() != tc.expectedError) {
 					t.Errorf("got error: %v, wantErr: %v", err, tc.expectedError)

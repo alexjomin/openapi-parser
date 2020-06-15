@@ -3,6 +3,8 @@ package cmd
 import (
 	"time"
 
+	"github.com/alexjomin/openapi-parser/docparser/datatest/otherpackage"
+
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -73,23 +75,35 @@ type MapStringString map[string]string
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	ID                  bson.ObjectId     `json:"id"`
-	String              string            `json:"string,omitempty" validate:"required"`
-	Int                 int               `json:"int,omitempty"`
-	PointerOfString     *string           `json:"pointerOfString"`
-	SliceOfString       []string          `json:"sliceofString"`
-	SliceOfInt          []int             `json:"sliceofInt"`
-	SliceOfSliceOfFloat [][]float64       `json:"sliceofSliceofFloat"`
-	Struct              Foo               `json:"struct"`
-	SliceOfStruct       []Foo             `json:"sliceOfStruct"`
-	PointerOfStruct     *Foo              `json:"pointerOfStruct"`
-	Time                time.Time         `json:"time"`
-	PointerOfTime       *time.Time        `json:"pointerOfTime"`
-	EnumTest            string            `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
-	StrData             map[string]string `json:"strData"`
-	Children            map[string]Pet    `json:"children"`
-	IntData             map[string]int    `json:"IntData"`
-	ByteData            []byte            `json:"ByteData"`
+	ID                          bson.ObjectId     `json:"id"`
+	String                      string            `json:"string,omitempty" validate:"required"`
+	Int                         int               `json:"int,omitempty"`
+	PointerOfString             *string           `json:"pointerOfString"`
+	SliceOfString               []string          `json:"sliceofString"`
+	SliceOfInt                  []int             `json:"sliceofInt"`
+	SliceOfSliceOfFloat         [][]float64       `json:"sliceofSliceofFloat"`
+	Struct                      Foo               `json:"struct"`
+	StructWithCorrectSchemaName Foo2              `json:"struct_correct_name"`
+	ExternalData                otherpackage.Data `json:"external_data"`
+	SliceOfStruct               []Foo             `json:"sliceOfStruct"`
+	PointerOfStruct             *Foo              `json:"pointerOfStruct"`
+	Time                        time.Time         `json:"time"`
+	PointerOfTime               *time.Time        `json:"pointerOfTime"`
+	EnumTest                    string            `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
+	StrData                     map[string]string `json:"strData"`
+	Children                    map[string]Pet    `json:"children"`
+	IntData                     map[string]int    `json:"IntData"`
+	ByteData                    []byte            `json:"ByteData"`
+	Interface                   interface{}       `json:"interface"`
+}
+
+// Dog struct
+// @openapi:schema
+type Dog struct {
+	Pet
+	otherpackage.Data
+
+	Name string `json:"name"`
 }
 
 // Foo struct
