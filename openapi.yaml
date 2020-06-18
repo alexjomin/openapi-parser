@@ -65,6 +65,8 @@ components:
     AnyValue:
       description: 'Can be anything: string, number, array, object, etc., including
         `null`'
+    CustomString:
+      type: string
     Dog:
       allOf:
       - $ref: '#/components/schemas/Pet'
@@ -100,20 +102,21 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/Pet'
+        custom_string:
+          $ref: '#/components/schemas/CustomString'
         enumTest:
           type: string
           enum:
           - UNKNOWN
           - MALE
           - FEMALE
-        external_data:
-          $ref: '#/components/schemas/WeirdCustomName'
         id:
           type: string
         int:
           type: integer
-        interface:
-          $ref: '#/components/schemas/AnyValue'
+        json_data:
+          type: string
+          format: binary
         pointerOfString:
           nullable: true
           type: string
@@ -150,8 +153,8 @@ components:
           type: string
         struct:
           $ref: '#/components/schemas/Foo'
-        struct_correct_name:
-          $ref: '#/components/schemas/EditableFoo'
+        test:
+          $ref: '#/components/schemas/Test'
         time:
           type: string
           format: date-time
@@ -159,8 +162,12 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Foo'
+    Test:
+      type: integer
     WeirdCustomName:
       type: object
       properties:
         some_string:
           type: string
+    WeirdInt:
+      type: integer

@@ -4,3 +4,7 @@ package otherpackage
 type Data struct {
 	SomeString string `json:"some_string"`
 }
+
+// CustomString
+// @openapi:schema
+type CustomString string

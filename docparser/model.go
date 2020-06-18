@@ -446,7 +446,6 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 			// If the node is a Type
 			if ts, ok := spc.(*ast.TypeSpec); ok {
-
 				var entity interface{}
 				realName := ts.Name.Name
 				entityName := realName
@@ -464,17 +463,15 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					}
 				}
 
-				// MapType
-				if mp, ok := ts.Type.(*ast.MapType); ok {
-					entity = spec.parseMaps(mp)
+				switch n := ts.Type.(type) {
+				case *ast.MapType:
+					entity = spec.parseMaps(n)
 					logrus.
 						WithField("name", entityName).
 						Info("Parsing Schema")
-				}
 
-				// StructType
-				if tpe, ok := ts.Type.(*ast.StructType); ok {
-					entity = spec.parseStructs(f, tpe)
+				case *ast.StructType:
+					entity = spec.parseStructs(f, n)
 					mtd, ok := entity.(metaSchema)
 					if ok {
 						mtd.SetCustomName(entityName)
@@ -482,12 +479,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					logrus.
 						WithField("name", entityName).
 						Info("Parsing Schema")
-				}
 
-				// ArrayType
-				if tpa, ok := ts.Type.(*ast.ArrayType); ok {
+				case *ast.ArrayType:
 					e := newEntity()
-					p, err := parseNamedType(f, tpa.Elt, nil)
+					p, err := parseNamedType(f, n.Elt, nil)
 					if err != nil {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						continue
@@ -500,6 +495,19 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 						e.Items["type"] = p.Type
 					}
 					entity = &e
+
+				default:
+					p, err := parseNamedType(f, ts.Type, nil)
+					if err != nil {
+						logrus.WithError(err).Error("can't parse custom type")
+						continue
+					}
+					p.SetCustomName(entityName)
+
+					logrus.
+						WithField("name", entityName).
+						Info("Parsing Schema")
+					entity = p
 				}
 
 				if entity != nil {
