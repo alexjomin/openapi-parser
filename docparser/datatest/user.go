@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"time"
 
 	"gopkg.in/mgo.v2/bson"
@@ -90,6 +91,7 @@ type Pet struct {
 	Children            map[string]Pet    `json:"children"`
 	IntData             map[string]int    `json:"IntData"`
 	ByteData            []byte            `json:"ByteData"`
+	JSONData            json.RawMessage   `json:"json_data"`
 }
 
 // Foo struct

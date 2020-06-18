@@ -192,6 +192,11 @@ func TestParseNamedType(t *testing.T) {
 			expectedError: "expr (&{%!s(token.Pos=0) Object Pet}) not yet unsupported",
 		},
 		{
+			description:    "Should parse correctly a json.RawMessage",
+			expr:           &ast.Ident{Name: "json"},
+			expectedSchema: &schema{Type: "string", Format: "binary"},
+		},
+		{
 			description:   "Should throw error when parse *ast.InterfaceType",
 			expr:          &ast.InterfaceType{},
 			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
