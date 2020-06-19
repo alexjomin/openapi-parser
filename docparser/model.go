@@ -32,6 +32,7 @@ type openAPI struct {
 	Tags       []tag `yaml:"tags,omitempty"`
 	Components Components
 	Security   []map[string][]string `yaml:"security,omitempty"`
+	XGroupTags []interface{}         `yaml:"x-tagGroups"`
 }
 
 type server struct {
