@@ -170,7 +170,7 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 		t = "number"
 	case "bool":
 		t = "boolean"
-	case "byte":
+	case "byte", "json":
 		t = "string"
 		format = "binary"
 	default:
