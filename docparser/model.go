@@ -176,6 +176,7 @@ type action struct {
 	RequestBody requestBody           `yaml:"requestBody,omitempty"`
 	Security    []map[string][]string `yaml:",omitempty"`
 	Headers     map[string]header     `yaml:",omitempty"`
+	Servers     []map[string]string   `yaml:",omitempty"`
 }
 
 type parameter struct {
