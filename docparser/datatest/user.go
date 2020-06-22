@@ -34,16 +34,26 @@ import (
 //							type: string
 //		parameters:
 //			- in: path
-//				name: deviceId
-//				schema:
-//					type: integer
-//					enum: [3, 4]
-//				required: true
-//				description: Numeric ID of the user to get
+//			  name: deviceId
+//			  schema:
+//			  	type: integer
+//			  	enum: [3, 4]
+//			  required: true
+//			  description: Numeric ID of the user to get
 //		security:
 //			- petstore_auth:
 //				- write:pets
 //				- read:pets
+//		servers:
+//        - url: "https://{environment}.hello.com"
+//          description: "what up"
+//          variables:
+//            environment:
+//              default: api    # Production server
+//              enum:
+//                - api         # Production server
+//                - api.dev     # Development server
+//                - api.staging # Staging server
 func GetUser() {}
 
 // PostFoo returns a user corresponding to specified id

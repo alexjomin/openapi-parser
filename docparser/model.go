@@ -36,8 +36,15 @@ type openAPI struct {
 }
 
 type server struct {
-	URL         string `yaml:"url"`
-	Description string `yame:"description"`
+	URL         string                    `yaml:"url"`
+	Description string                    `yaml:"description"`
+	Variables   map[string]serverVariable `yaml:",omitempty"`
+}
+
+type serverVariable struct {
+	Default     string
+	Enum        []string
+	Description string
 }
 
 func NewOpenAPI() openAPI {
