@@ -82,6 +82,14 @@ var mergeCmd = &cobra.Command{
 				logrus.WithField("schema", k).Info("Adding Schema")
 			}
 
+			registeredServers := make(map[string]bool)
+			for _, server := range spec.Servers {
+				if _, found := registeredServers[server.URL]; found {
+					continue
+				}
+				main.Servers = append(main.Servers, server)
+				registeredServers[server.URL] = true
+			}
 		}
 
 		d, err := yaml.Marshal(&main)
