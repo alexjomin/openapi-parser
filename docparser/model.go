@@ -244,10 +244,10 @@ func validatePath(path string, parseVendors []string) bool {
 	return true
 }
 
-func (spec *openAPI) Parse(path string, parseVendors []string) {
+func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string) {
 	// fset := token.NewFileSet() // positions are relative to fset
 
-	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+	walker := func(path string, f os.FileInfo, err error) error {
 		if validatePath(path, parseVendors) {
 			astFile, _ := parseFile(path)
 			spec.parseInfos(astFile)
@@ -255,7 +255,10 @@ func (spec *openAPI) Parse(path string, parseVendors []string) {
 			spec.parsePaths(astFile)
 		}
 		return nil
-	})
+	}
+
+	_ = filepath.Walk(path, walker)
+	_ = filepath.Walk(vendorsPath, walker)
 	spec.composeSpecSchemas()
 }
 

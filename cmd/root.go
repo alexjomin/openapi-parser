@@ -15,6 +15,7 @@ var (
 	outputPath   string
 	inputPath    string
 	parseVendors []string
+	vendorsPath  string
 )
 
 // RootCmd represents the root command
@@ -24,7 +25,7 @@ var RootCmd = &cobra.Command{
 	Long:  `Parse comments in code to generate an OpenAPI documentation`,
 	Run: func(cmd *cobra.Command, args []string) {
 		spec := docparser.NewOpenAPI()
-		spec.Parse(inputPath, parseVendors)
+		spec.Parse(inputPath, parseVendors, vendorsPath)
 		d, err := yaml.Marshal(&spec)
 		if err != nil {
 			log.Fatalf("error: %v", err)
@@ -46,4 +47,5 @@ func init() {
 	RootCmd.Flags().StringVar(&outputPath, "output", "openapi.yaml", "The output file")
 	RootCmd.Flags().StringVar(&inputPath, "path", ".", "The Folder to parse")
 	RootCmd.Flags().StringArrayVar(&parseVendors, "parse-vendors", []string{}, "Give the vendor to parse")
+	RootCmd.Flags().StringVar(&vendorsPath, "vendors-path", "vendor", "Give the vendor path")
 }
