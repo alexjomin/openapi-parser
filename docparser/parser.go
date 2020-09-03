@@ -174,14 +174,6 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 		t = "string"
 		format = "binary"
 	default:
-		if expr.Obj != nil {
-			// maybe a custom type
-			if typ, ok := expr.Obj.Decl.(*ast.TypeSpec); ok {
-				if ident, ok := typ.Type.(*ast.Ident); ok {
-					return parseIdentProperty(ident)
-				}
-			}
-		}
 		t = expr.Name
 		err = fmt.Errorf("Can't set the type %s", expr.Name)
 	}
