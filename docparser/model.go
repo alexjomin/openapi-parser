@@ -1,6 +1,7 @@
 package docparser
 
 import (
+	"errors"
 	"go/ast"
 	"os"
 	"path/filepath"
@@ -167,6 +168,21 @@ func (s *schema) SetCustomName(customName string) {
 	s.metadata.CustomName = customName
 }
 
+type BuildError struct {
+	Err     error
+	Content string
+	Message string
+}
+
+func (e BuildError) Error() string {
+	err, _ := logrus.
+		WithError(e.Err).
+		WithField("content", e.Content).
+		WithField("message", e.Message).
+		String()
+	return err
+}
+
 type items struct {
 	Type string
 }
@@ -244,25 +260,37 @@ func validatePath(path string, parseVendors []string) bool {
 	return true
 }
 
-func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string) {
+func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string, exitNonZeroOnError bool) {
 	// fset := token.NewFileSet() // positions are relative to fset
 
 	walker := func(path string, f os.FileInfo, err error) error {
 		if validatePath(path, parseVendors) {
 			astFile, _ := parseFile(path)
-			spec.parseInfos(astFile)
-			spec.parseSchemas(astFile)
-			spec.parsePaths(astFile)
+			infosErrors := spec.parseInfos(astFile)
+			schemasErrors := spec.parseSchemas(astFile)
+			pathErrors := spec.parsePaths(astFile)
+			if exitNonZeroOnError &&
+				(len(infosErrors) > 0 || len(schemasErrors) > 0 || len(pathErrors) > 0) {
+				return errors.New("errors while generating OpenAPI schema")
+			}
 		}
 		return nil
 	}
 
-	_ = filepath.Walk(path, walker)
-	_ = filepath.Walk(vendorsPath, walker)
+	err := filepath.Walk(path, walker)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = filepath.Walk(vendorsPath, walker)
+	if err != nil {
+		os.Exit(1)
+	}
+
 	spec.composeSpecSchemas()
 }
 
-func (spec *openAPI) parsePaths(f *ast.File) {
+func (spec *openAPI) parsePaths(f *ast.File) (errors []error) {
 	for _, s := range f.Comments {
 		t := s.Text()
 		// Test if comments is a path
@@ -282,6 +310,11 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 				WithError(err).
 				WithField("content", content).
 				Error("Unable to unmarshal path")
+			errors = append(errors, &BuildError{
+				Err:     err,
+				Content: content,
+				Message: "unable to unmarshal path",
+			})
 			continue
 		}
 
@@ -314,6 +347,8 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 				Info("Parsing path")
 		}
 	}
+
+	return
 }
 
 func replaceSchemaNameToCustom(s *schema) {
@@ -445,7 +480,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} 
 	}
 }
 
-func (spec *openAPI) parseSchemas(f *ast.File) {
+func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 	for _, decl := range f.Decls {
 		gd, ok := decl.(*ast.GenDecl)
 		if !ok {
@@ -497,6 +532,11 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					p, err := parseNamedType(f, n.Elt, nil)
 					if err != nil {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
+						errors = append(errors, &BuildError{
+							Err:     err,
+							Content: "",
+							Message: "Can't parse the type of field in struct",
+						})
 						continue
 					}
 
@@ -528,6 +568,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 			}
 		}
 	}
+	return
 }
 
 func (spec *openAPI) AddAction(path, verb string, a action) {
@@ -537,7 +578,7 @@ func (spec *openAPI) AddAction(path, verb string, a action) {
 	spec.Paths[path][verb] = a
 }
 
-func (spec *openAPI) parseInfos(f *ast.File) {
+func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 	for _, s := range f.Comments {
 		t := s.Text()
 		// Test if comment is an info block
@@ -557,6 +598,11 @@ func (spec *openAPI) parseInfos(f *ast.File) {
 				WithError(err).
 				WithField("content", content).
 				Error("Unable to unmarshal infos")
+			errors = append(errors, &BuildError{
+				Err:     err,
+				Content: content,
+				Message: "Unable to unmarshal infos",
+			})
 			continue
 		}
 
@@ -602,4 +648,5 @@ func (spec *openAPI) parseInfos(f *ast.File) {
 			spec.Info.Description = description
 		}
 	}
+	return
 }

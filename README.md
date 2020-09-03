@@ -87,10 +87,12 @@ Available Commands:
   merge       Merge multiple openapi specification into one
 
 Flags:
+      --exit-error                  When an error occurs on parsing, exit with a code > 0
   -h, --help                        help for openapi-parser
       --output string               The output file (default "openapi.yaml")
       --parse-vendors stringArray   Give the vendor to parse
       --path string                 The Folder to parse (default ".")
+      --vendors-path string         Give the vendor path (default "vendor")
 ```
 
 ### Example
@@ -98,5 +100,7 @@ Flags:
 `openapi-parser`
 
 `openapi-parser --path /my/path --output my-openapi.yaml`
+
+`openapi-parser --path /my/path --output my-openapi.yaml --exit-error`
 
 `openapi-parser --path /my/path --output my-openapi.yaml --parse-vendors github.com/my/library-to-parse`
