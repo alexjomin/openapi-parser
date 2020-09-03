@@ -16,6 +16,12 @@ var (
 	rexexpSchema = regexp.MustCompile(`@openapi:schema:?(\w+)?:?(?:\[([\w,]+)\])?`)
 	regexpInfo   = regexp.MustCompile("@openapi:info\n([^@]*)$")
 	tab          = regexp.MustCompile(`\t`)
+
+	registeredSchemas = map[string]interface{}{
+		"AnyValue": map[string]string{
+			"description": "Can be anything: string, number, array, object, etc., including `null`",
+		},
+	}
 )
 
 type openAPI struct {
@@ -26,11 +32,19 @@ type openAPI struct {
 	Tags       []tag `yaml:"tags,omitempty"`
 	Components Components
 	Security   []map[string][]string `yaml:"security,omitempty"`
+	XGroupTags []interface{}         `yaml:"x-tagGroups"`
 }
 
 type server struct {
-	URL         string `yaml:"url"`
-	Description string `yame:"description"`
+	URL         string                    `yaml:"url"`
+	Description string                    `yaml:"description"`
+	Variables   map[string]serverVariable `yaml:",omitempty"`
+}
+
+type serverVariable struct {
+	Default     string
+	Enum        []string
+	Description string
 }
 
 func NewOpenAPI() openAPI {
@@ -39,6 +53,7 @@ func NewOpenAPI() openAPI {
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
 	spec.Components.Schemas = make(map[string]interface{})
+
 	return spec
 }
 
@@ -50,7 +65,7 @@ type Components struct {
 type securitySchemes struct {
 	Type   string
 	Flows  map[string]flow `yaml:"flows,omitempty"`
-	Scheme string `yaml:"scheme,omitempty"`
+	Scheme string          `yaml:"scheme,omitempty"`
 }
 
 type flow struct {
@@ -75,16 +90,50 @@ type tag struct {
 
 func newEntity() schema {
 	e := schema{}
-	e.Properties = make(map[string]schema)
+	e.Properties = make(map[string]*schema)
 	e.Items = make(map[string]interface{})
 	return e
 }
 
+type metaSchema interface {
+	RealName() string
+	CustomName() string
+	SetCustomName(string)
+}
+
+type metadata struct {
+	RealName   string `yaml:"-"`
+	CustomName string `yaml:"-"`
+}
+
 type composedSchema struct {
-	AllOf []*schema `yaml:"allOf"`
+	metadata `yaml:"-"`
+	AllOf    []*schema `yaml:"allOf"`
+}
+
+func (c *composedSchema) RealName() string {
+	if c == nil {
+		return ""
+	}
+	return c.metadata.RealName
+}
+
+func (c *composedSchema) CustomName() string {
+	if c == nil {
+		return ""
+	}
+	return c.metadata.CustomName
+}
+
+func (c *composedSchema) SetCustomName(customName string) {
+	if c == nil {
+		return
+	}
+	c.metadata.CustomName = customName
 }
 
 type schema struct {
+	metadata             `yaml:"-"`
 	Nullable             bool                   `yaml:"nullable,omitempty"`
 	Required             []string               `yaml:"required,omitempty"`
 	Type                 string                 `yaml:",omitempty"`
@@ -92,9 +141,30 @@ type schema struct {
 	Format               string                 `yaml:"format,omitempty"`
 	Ref                  string                 `yaml:"$ref,omitempty"`
 	Enum                 []string               `yaml:",omitempty"`
-	Properties           map[string]schema      `yaml:",omitempty"`
+	Properties           map[string]*schema     `yaml:",omitempty"`
 	AdditionalProperties *schema                `yaml:"additionalProperties,omitempty"`
 	OneOf                []schema               `yaml:"oneOf,omitempty"`
+}
+
+func (s *schema) RealName() string {
+	if s == nil {
+		return ""
+	}
+	return s.metadata.RealName
+}
+
+func (s *schema) CustomName() string {
+	if s == nil {
+		return ""
+	}
+	return s.metadata.CustomName
+}
+
+func (s *schema) SetCustomName(customName string) {
+	if s == nil {
+		return
+	}
+	s.metadata.CustomName = customName
 }
 
 type items struct {
@@ -113,6 +183,7 @@ type action struct {
 	RequestBody requestBody           `yaml:"requestBody,omitempty"`
 	Security    []map[string][]string `yaml:",omitempty"`
 	Headers     map[string]header     `yaml:",omitempty"`
+	Servers     []server              `yaml:",omitempty"`
 }
 
 type parameter struct {
@@ -173,10 +244,10 @@ func validatePath(path string, parseVendors []string) bool {
 	return true
 }
 
-func (spec *openAPI) Parse(path string, parseVendors []string) {
+func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string) {
 	// fset := token.NewFileSet() // positions are relative to fset
 
-	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+	walker := func(path string, f os.FileInfo, err error) error {
 		if validatePath(path, parseVendors) {
 			astFile, _ := parseFile(path)
 			spec.parseInfos(astFile)
@@ -184,8 +255,11 @@ func (spec *openAPI) Parse(path string, parseVendors []string) {
 			spec.parsePaths(astFile)
 		}
 		return nil
-	})
+	}
 
+	_ = filepath.Walk(path, walker)
+	_ = filepath.Walk(vendorsPath, walker)
+	spec.composeSpecSchemas()
 }
 
 func (spec *openAPI) parsePaths(f *ast.File) {
@@ -242,6 +316,135 @@ func (spec *openAPI) parsePaths(f *ast.File) {
 	}
 }
 
+func replaceSchemaNameToCustom(s *schema) {
+	if s == nil {
+		return
+	}
+
+	for _, property := range s.Properties {
+		replaceSchemaNameToCustom(property)
+	}
+	replaceSchemaNameToCustom(s.AdditionalProperties)
+
+	refSplit := strings.Split(s.Ref, "/")
+	if len(refSplit) != 4 {
+		return
+	}
+	if replacementSchema, found := registeredSchemas[refSplit[3]]; found {
+		meta, ok := replacementSchema.(metaSchema)
+		if !ok {
+			return
+		}
+		refSplit[3] = meta.CustomName()
+	}
+	s.Ref = strings.Join(refSplit, "/")
+}
+
+func (spec *openAPI) composeSpecSchemas() {
+	for realName, registeredSchema := range registeredSchemas {
+		if realName == "AnyValue" {
+			spec.Components.Schemas[realName] = registeredSchema
+			continue
+		}
+
+		meta, ok := registeredSchema.(metaSchema)
+		if !ok {
+			continue
+		}
+
+		if composed, ok := registeredSchema.(*composedSchema); ok {
+			for _, s := range composed.AllOf {
+				replaceSchemaNameToCustom(s)
+			}
+		} else if normal, ok := registeredSchema.(*schema); ok {
+			replaceSchemaNameToCustom(normal)
+		}
+
+		name := realName
+		if meta.CustomName() != "" {
+			name = meta.CustomName()
+		}
+		spec.Components.Schemas[name] = registeredSchema
+	}
+}
+
+func (spec *openAPI) parseMaps(mp *ast.MapType) *schema {
+	// only map[string]
+	if i, ok := mp.Key.(*ast.Ident); ok {
+		t, _, _ := parseIdentProperty(i)
+		if t != "string" {
+			return nil
+		}
+	}
+
+	e := newEntity()
+	e.Type = "object"
+	e.AdditionalProperties = &schema{}
+
+	// map[string]interface{}
+	if _, ok := mp.Value.(*ast.InterfaceType); ok {
+		return &e
+	}
+
+	return nil
+}
+
+func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} {
+	var cs *composedSchema
+	e := newEntity()
+	e.Type = "object"
+
+	for _, fld := range tpe.Fields.List {
+		if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
+			j, err := parseJSONTag(fld)
+			if j.ignore {
+				continue
+			}
+			p, err := parseNamedType(f, fld.Type, nil)
+
+			if j.required {
+				e.Required = append(e.Required, j.name)
+			}
+
+			if err != nil {
+				logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
+				continue
+			}
+
+			if len(j.enum) > 0 {
+				p.Enum = j.enum
+			}
+
+			if p != nil {
+				e.Properties[j.name] = p
+			}
+
+		} else {
+			// composition
+			if cs == nil {
+				cs = &composedSchema{
+					AllOf: make([]*schema, 0),
+				}
+			}
+
+			p, err := parseNamedType(f, fld.Type, nil)
+			if err != nil {
+				logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
+				continue
+			}
+
+			cs.AllOf = append(cs.AllOf, p)
+		}
+	}
+
+	if cs == nil {
+		return &e
+	} else {
+		cs.AllOf = append(cs.AllOf, &e)
+		return cs
+	}
+}
+
 func (spec *openAPI) parseSchemas(f *ast.File) {
 	for _, decl := range f.Decls {
 		gd, ok := decl.(*ast.GenDecl)
@@ -255,9 +458,9 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 
 			// If the node is a Type
 			if ts, ok := spc.(*ast.TypeSpec); ok {
-
-				entityName := ts.Name.Name
-				// fmt.Printf("type : %T %s\n", ts.Type, entityName)
+				var entity interface{}
+				realName := ts.Name.Name
+				entityName := realName
 
 				// Looking for openapi entity
 				a := rexexpSchema.FindSubmatch([]byte(t))
@@ -272,121 +475,55 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					}
 				}
 
-				// array type
-				if ar, ok := ts.Type.(*ast.ArrayType); ok {
-					if i, ok := ar.Elt.(*ast.Ident); ok {
-						e := newEntity()
-						e.Type = "array"
-						t, _, _ := parseIdentProperty(i)
-						e.Items["type"] = t
-						logrus.
-							WithField("name", entityName).
-							Info("Parsing Schema")
-					}
-				}
-
-				// MapType
-				if mp, ok := ts.Type.(*ast.MapType); ok {
-
-					// only map[string]
-					if i, ok := mp.Key.(*ast.Ident); ok {
-						t, _, _ := parseIdentProperty(i)
-						if t != "string" {
-							continue
-						}
-					}
-
-					e := newEntity()
-					e.Type = "object"
-					e.AdditionalProperties = &schema{}
-
-					// map[string]interface{}
-					if _, ok := mp.Value.(*ast.InterfaceType); ok {
-						spec.Components.Schemas[entityName] = e
-						logrus.
-							WithField("name", entityName).
-							Info("Parsing Schema")
-					}
-				}
-
-				// StructType
-				if tpe, ok := ts.Type.(*ast.StructType); ok {
-					var cs *composedSchema
-					e := newEntity()
-					e.Type = "object"
-
+				switch n := ts.Type.(type) {
+				case *ast.MapType:
+					entity = spec.parseMaps(n)
 					logrus.
 						WithField("name", entityName).
 						Info("Parsing Schema")
 
-					for _, fld := range tpe.Fields.List {
-						if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
-							j, err := parseJSONTag(fld)
-							if j.ignore {
-								continue
-							}
-							p, err := parseNamedType(f, fld.Type)
-
-							if j.required {
-								e.Required = append(e.Required, j.name)
-							}
-
-							if err != nil {
-								logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
-								continue
-							}
-
-							if len(j.enum) > 0 {
-								p.Enum = j.enum
-							}
-
-							if p != nil {
-								e.Properties[j.name] = *p
-							}
-
-						} else {
-							// composition
-							if cs == nil {
-								cs = &composedSchema{
-									AllOf: make([]*schema, 0),
-								}
-							}
-
-							p, err := parseNamedType(f, fld.Type)
-							if err != nil {
-								logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
-								continue
-							}
-
-							cs.AllOf = append(cs.AllOf, p)
-						}
+				case *ast.StructType:
+					entity = spec.parseStructs(f, n)
+					mtd, ok := entity.(metaSchema)
+					if ok {
+						mtd.SetCustomName(entityName)
 					}
+					logrus.
+						WithField("name", entityName).
+						Info("Parsing Schema")
 
-					if cs == nil {
-						spec.Components.Schemas[entityName] = e
-					} else {
-						cs.AllOf = append(cs.AllOf, &e)
-						spec.Components.Schemas[entityName] = cs
-					}
-				}
-
-				// ArrayType
-				if tpa, ok := ts.Type.(*ast.ArrayType); ok {
-					entity := newEntity()
-					p, err := parseNamedType(f, tpa.Elt)
+				case *ast.ArrayType:
+					e := newEntity()
+					p, err := parseNamedType(f, n.Elt, nil)
 					if err != nil {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						continue
 					}
 
-					entity.Type = "array"
+					e.Type = "array"
 					if p.Ref != "" {
-						entity.Items["$ref"] = p.Ref
+						e.Items["$ref"] = p.Ref
 					} else {
-						entity.Items["type"] = p.Type
+						e.Items["type"] = p.Type
 					}
+					entity = &e
 
-					spec.Components.Schemas[entityName] = entity
+				default:
+					p, err := parseNamedType(f, ts.Type, nil)
+					if err != nil {
+						logrus.WithError(err).Error("can't parse custom type")
+						continue
+					}
+					p.SetCustomName(entityName)
+
+					logrus.
+						WithField("name", entityName).
+						Info("Parsing Schema")
+					entity = p
+				}
+
+				if entity != nil {
+					registeredSchemas[realName] = entity
 				}
 			}
 		}

@@ -1,53 +1,13 @@
 openapi: 3.0.0
 info:
-  version: ""
-  title: ""
-  description: ""
+  version: 0.0.1
+  title: Some cool title
+  description: Awesome description
 servers: []
 paths:
-  /track/{trackId}:
+  /pets:
     get:
-      summary: Retrieve a track
-      description: Returns a track corresponding to specified id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Track'
-            application/vnd.geo+json:
-              schema:
-                $ref: '#/components/schemas/Geojson'
-          description: A Track
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Track not found
-      tags:
-      - track
-      parameters:
-      - in: header
-        name: Accept
-        schema:
-          type: string
-          enum:
-          - application/json
-          - application/vnd.geo+json
-        required: false
-        description: The type of content to be returned, json or geojson
-      - in: path
-        name: trackId
-        schema:
-          type: string
-        required: true
-        description: uuid of the track
-  /tracks/near/{lon}/{lat}:
-    get:
-      summary: Retrieve tracks near a point
-      description: Returns a tracks near a point within a radius of 10km, sorted by
-        proximity
+      description: Returns all pets from the system that the user has access to
       responses:
         "200":
           content:
@@ -55,248 +15,159 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Track'
-            application/vnd.geo+json:
+                  $ref: '#/components/schemas/Pet'
+          description: A list of pets.
+        "302":
+          content: {}
+          description: Trip Signals Redirection
+          headers:
+            Location:
+              description: The url to the signal API
               schema:
-                $ref: '#/components/schemas/Geojson'
-          description: An Array of Tracks
+                type: string
       tags:
-      - track
+      - pet
       parameters:
       - in: path
-        name: lat
+        name: deviceId
         schema:
-          type: string
+          type: integer
+          enum:
+          - "3"
+          - "4"
         required: true
-        description: the latitude of the point
-      - in: path
-        name: lon
-        schema:
-          type: string
+        description: Numeric ID of the user to get
+      security:
+      - petstore_auth:
+        - write:pets
+        - read:pets
+    post:
+      description: Returns all pets from the system that the user has access to
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+          description: Post a new pet
+      parameters: []
+      requestBody:
+        description: Pet to add to the store
         required: true
-        description: the longitude of the point
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
 components:
   schemas:
-    Address:
+    AnyValue:
+      description: 'Can be anything: string, number, array, object, etc., including
+        `null`'
+    CustomString:
+      type: string
+    Dog:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - $ref: '#/components/schemas/WeirdCustomName'
+      - type: object
+        properties:
+          name:
+            type: string
+    EditableFoo:
       type: object
       properties:
-        city:
+        string:
           type: string
-        countryCode:
-          type: string
-        latitude:
-          type: number
-        longitude:
-          type: number
-        position:
-          nullable: true
-          $ref: '#/components/schemas/geojson'
-    Comment:
+    Foo:
       type: object
       properties:
-        content:
+        string:
           type: string
-        creation:
+    MapStringString: null
+    Pet:
+      required:
+      - string
+      type: object
+      properties:
+        ByteData:
           type: string
-          format: date-time
+          format: binary
+        IntData:
+          type: object
+          additionalProperties:
+            type: integer
+        children:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Pet'
+        custom_string:
+          $ref: '#/components/schemas/CustomString'
+        enumTest:
+          type: string
+          enum:
+          - UNKNOWN
+          - MALE
+          - FEMALE
         id:
           type: string
-        modification:
+        int:
+          type: integer
+        json_data:
+          type: string
+          format: binary
+        pointerOfString:
+          nullable: true
+          type: string
+        pointerOfStruct:
+          nullable: true
+          $ref: '#/components/schemas/Foo'
+        pointerOfTime:
+          nullable: true
           type: string
           format: date-time
-        user:
-          $ref: '#/components/schemas/User'
-    Elevation:
-      type: array
-      items:
-        type: number
-    NearTrack:
-      type: object
-      properties:
-        Distance:
-          type: number
-        ID:
-          type: string
-    OSMAddress:
-      type: object
-      properties:
-        city:
-          type: string
-        country:
-          type: string
-        country_code:
-          type: string
-        county:
-          type: string
-        hamlet:
-          type: string
-        postcode:
-          type: string
-        public_building:
-          type: string
-        road:
-          type: string
-        state:
-          type: string
-        town:
-          type: string
-        village:
-          type: string
-    OsmPlace:
-      type: object
-      properties:
-        address:
-          $ref: '#/components/schemas/OSMAddress'
-        boundingbox:
+        sliceOfStruct:
+          type: array
+          items:
+            $ref: '#/components/schemas/Foo'
+        sliceofInt:
+          type: array
+          items:
+            type: integer
+        sliceofSliceofFloat:
+          type: array
+          items:
+            items:
+              type: number
+            type: array
+        sliceofString:
           type: array
           items:
             type: string
-        display_name:
+        strData:
+          type: object
+          additionalProperties:
+            type: string
+        string:
           type: string
-        lat:
+        struct:
+          $ref: '#/components/schemas/Foo'
+        test:
+          $ref: '#/components/schemas/Test'
+        time:
           type: string
-        licence:
-          type: string
-        lon:
-          type: string
-        osm_id:
-          type: string
-        osm_type:
-          type: string
-        place_id:
-          type: string
-    Picture:
+          format: date-time
+    Signals:
+      type: array
+      items:
+        $ref: '#/components/schemas/Foo'
+    Test:
+      type: integer
+    WeirdCustomName:
       type: object
       properties:
-        caption:
-          nullable: true
+        some_string:
           type: string
-        creation:
-          type: string
-          format: date-time
-        height:
-          type: integer
-        id:
-          type: string
-        position:
-          nullable: true
-          $ref: '#/components/schemas/geojson'
-        url:
-          type: string
-        width:
-          type: integer
-    Poi:
-      type: object
-      properties:
-        caption:
-          type: string
-        creation:
-          nullable: true
-          type: string
-          format: date-time
-        icon:
-          type: string
-        id:
-          type: string
-        modification:
-          nullable: true
-          type: string
-          format: date-time
-        position:
-          nullable: true
-          $ref: '#/components/schemas/geojson'
-    Rating:
-      type: object
-      additionalProperties: true
-    Track:
-      type: object
-      properties:
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
-        creation:
-          type: string
-          format: date-time
-        description:
-          type: string
-        distance:
-          type: integer
-        downloads:
-          type: integer
-        elevationGain:
-          type: integer
-        elevationLoss:
-          type: integer
-        endAddress:
-          nullable: true
-          $ref: '#/components/schemas/Address'
-        id:
-          type: string
-        name:
-          type: string
-        pictures:
-          type: array
-          items:
-            $ref: '#/components/schemas/Picture'
-        pois:
-          type: array
-          items:
-            $ref: '#/components/schemas/Poi'
-        rating:
-          $ref: '#/components/schemas/Rating'
-        startAddress:
-          nullable: true
-          $ref: '#/components/schemas/Address'
-        user:
-          $ref: '#/components/schemas/User'
-        video:
-          type: array
-          items:
-            $ref: '#/components/schemas/Video'
-    User:
-      type: object
-      properties:
-        creation:
-          type: string
-          format: date-time
-        id:
-          type: string
-        modification:
-          nullable: true
-          type: string
-          format: date-time
-        name:
-          type: string
-    Video:
-      type: object
-      properties:
-        creation:
-          nullable: true
-          type: string
-          format: date-time
-        id:
-          nullable: true
-          type: string
-        modification:
-          nullable: true
-          type: string
-          format: date-time
-        platform:
-          nullable: true
-          type: string
-        slug:
-          nullable: true
-          type: string
-        trackId:
-          nullable: true
-          type: string
-    geometry:
-      type: object
-      properties:
-        bbox:
-          type: array
-          items:
-            type: number
-        type:
-          $ref: '#/components/schemas/geojson'
+    WeirdInt:
+      type: integer

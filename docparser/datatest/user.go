@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"time"
 
 	"gopkg.in/mgo.v2/bson"
+
+	"github.com/alexjomin/openapi-parser/docparser/datatest/otherpackage"
 )
 
 // GetUser returns a user corresponding to specified id
@@ -31,16 +34,26 @@ import (
 //							type: string
 //		parameters:
 //			- in: path
-//				name: deviceId
-//				schema:
-//					type: integer
-//					enum: [3, 4]
-//				required: true
-//				description: Numeric ID of the user to get
+//			  name: deviceId
+//			  schema:
+//			  	type: integer
+//			  	enum: [3, 4]
+//			  required: true
+//			  description: Numeric ID of the user to get
 //		security:
 //			- petstore_auth:
 //				- write:pets
 //				- read:pets
+//		servers:
+//        - url: "https://{environment}.hello.com"
+//          description: "what up"
+//          variables:
+//            environment:
+//              default: api    # Production server
+//              enum:
+//                - api         # Production server
+//                - api.dev     # Development server
+//                - api.staging # Staging server
 func GetUser() {}
 
 // PostFoo returns a user corresponding to specified id
@@ -70,26 +83,41 @@ func PostFoo() {}
 // @openapi:schema
 type MapStringString map[string]string
 
+// @openapi:schema
+type WeirdInt int
+
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	ID                  bson.ObjectId     `json:"id"`
-	String              string            `json:"string,omitempty" validate:"required"`
-	Int                 int               `json:"int,omitempty"`
-	PointerOfString     *string           `json:"pointerOfString"`
-	SliceOfString       []string          `json:"sliceofString"`
-	SliceOfInt          []int             `json:"sliceofInt"`
-	SliceOfSliceOfFloat [][]float64       `json:"sliceofSliceofFloat"`
-	Struct              Foo               `json:"struct"`
-	SliceOfStruct       []Foo             `json:"sliceOfStruct"`
-	PointerOfStruct     *Foo              `json:"pointerOfStruct"`
-	Time                time.Time         `json:"time"`
-	PointerOfTime       *time.Time        `json:"pointerOfTime"`
-	EnumTest            string            `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
-	StrData             map[string]string `json:"strData"`
-	Children            map[string]Pet    `json:"children"`
-	IntData             map[string]int    `json:"IntData"`
-	ByteData            []byte            `json:"ByteData"`
+	ID                  bson.ObjectId             `json:"id"`
+	String              string                    `json:"string,omitempty" validate:"required"`
+	Int                 int                       `json:"int,omitempty"`
+	PointerOfString     *string                   `json:"pointerOfString"`
+	SliceOfString       []string                  `json:"sliceofString"`
+	SliceOfInt          []int                     `json:"sliceofInt"`
+	SliceOfSliceOfFloat [][]float64               `json:"sliceofSliceofFloat"`
+	Struct              Foo                       `json:"struct"`
+	SliceOfStruct       []Foo                     `json:"sliceOfStruct"`
+	PointerOfStruct     *Foo                      `json:"pointerOfStruct"`
+	Time                time.Time                 `json:"time"`
+	PointerOfTime       *time.Time                `json:"pointerOfTime"`
+	EnumTest            string                    `json:"enumTest" validate:"enum=UNKNOWN MALE FEMALE"`
+	StrData             map[string]string         `json:"strData"`
+	Children            map[string]Pet            `json:"children"`
+	IntData             map[string]int            `json:"IntData"`
+	ByteData            []byte                    `json:"ByteData"`
+	JSONData            json.RawMessage           `json:"json_data"`
+	CustomString        otherpackage.CustomString `json:"custom_string"`
+	Test                Test                      `json:"test"`
+}
+
+// Dog struct
+// @openapi:schema
+type Dog struct {
+	Pet
+	otherpackage.Data
+
+	Name string `json:"name"`
 }
 
 // Foo struct
@@ -107,6 +135,10 @@ type Foo2 struct {
 // Signals struct
 // @openapi:schema
 type Signals []Foo
+
+// Test struct
+// @openapi:schema
+type Test int
 
 // @openapi:info
 //  version: 0.0.1
