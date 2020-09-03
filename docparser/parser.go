@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+const jsonTagOpenAPIDescription = "openapi-description"
+
 var enumRegex = regexp.MustCompile(`enum=([\w ]+)`)
 var oneOfRegex = regexp.MustCompile(`oneof=([\w ]+)`) // validator.v9 enum tag is oneof
 
@@ -26,10 +28,11 @@ func parseFile(path string) (*ast.File, error) {
 }
 
 type jsonTagInfo struct {
-	name     string
-	ignore   bool
-	required bool
-	enum     []string
+	name        string
+	ignore      bool
+	required    bool
+	enum        []string
+	description string
 }
 
 func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
@@ -70,6 +73,7 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 				j.name = jsonName
 				j.required = required
 				j.ignore = false
+				j.description = st.Get(jsonTagOpenAPIDescription)
 
 				return j, nil
 			}

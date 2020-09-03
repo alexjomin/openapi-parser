@@ -261,6 +261,7 @@ func TestParseNamedType(t *testing.T) {
 		})
 	}
 }
+
 func TestParseJSONTag(t *testing.T) {
 	testCases := []parseJSONTagTestCase{
 		{
@@ -401,6 +402,20 @@ func TestParseJSONTag(t *testing.T) {
 				required: true,
 				name:     "jsontagname",
 				enum:     []string{"a", "b"},
+			},
+		},
+		{
+			description: "Should parse json tag description",
+			field: &ast.Field{
+				Tag: &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     0,
+					Value:    "`json:\"jsontagname\" openapi-description:\"json description of this field\"`",
+				},
+			},
+			expectedJSONTag: jsonTagInfo{
+				name:        "jsontagname",
+				description: "json description of this field",
 			},
 		},
 	}
