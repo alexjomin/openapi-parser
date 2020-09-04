@@ -145,6 +145,7 @@ type schema struct {
 	Properties           map[string]*schema     `yaml:",omitempty"`
 	AdditionalProperties *schema                `yaml:"additionalProperties,omitempty"`
 	OneOf                []schema               `yaml:"oneOf,omitempty"`
+	Description          string                 `yaml:"description,omitempty"`
 }
 
 func (s *schema) RealName() string {
@@ -449,6 +450,8 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} 
 			if len(j.enum) > 0 {
 				p.Enum = j.enum
 			}
+
+			p.Description = j.description
 
 			if p != nil {
 				e.Properties[j.name] = p
