@@ -114,7 +114,7 @@ type composedSchema struct {
 
 type externalDoc struct {
 	Description string `yaml:",omitempty"`
-	Url string `yaml:"url,omitempty"`
+	Url         string `yaml:"url,omitempty"`
 }
 
 func (c *composedSchema) RealName() string {
@@ -192,18 +192,18 @@ func (e BuildError) Error() string {
 type path map[string]operation
 
 type operation struct {
-	Summary     string `yaml:",omitempty"`
-	Description string
-	ID          string `yaml:"operationId,omitempty"`
-	Responses   map[string]response
-	Tags        []string `yaml:",omitempty"`
-	Parameters  []parameter
-	RequestBody requestBody           `yaml:"requestBody,omitempty"`
-	Security    []map[string][]string `yaml:",omitempty"`
-	Headers     map[string]header     `yaml:",omitempty"`
-	Deprecated  bool				  `yaml:",omitempty"`
-	Servers     []server              `yaml:",omitempty"`
-	ExternalDocs externalDoc		  `yaml:"externalDocs,omitempty"`
+	Summary      string `yaml:",omitempty"`
+	Description  string
+	ID           string `yaml:"operationId,omitempty"`
+	Responses    map[string]response
+	Tags         []string `yaml:",omitempty"`
+	Parameters   []parameter
+	RequestBody  requestBody           `yaml:"requestBody,omitempty"`
+	Security     []map[string][]string `yaml:",omitempty"`
+	Headers      map[string]header     `yaml:",omitempty"`
+	Deprecated   bool                  `yaml:",omitempty"`
+	Servers      []server              `yaml:",omitempty"`
+	ExternalDocs externalDoc           `yaml:"externalDocs,omitempty"`
 }
 
 type parameter struct {
