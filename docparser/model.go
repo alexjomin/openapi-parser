@@ -451,12 +451,11 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 			if j.ignore {
 				continue
 			}
-			p, err := parseNamedType(f, fld.Type, nil)
-
 			if j.required {
 				e.Required = append(e.Required, j.name)
 			}
 
+			p, err := parseNamedType(f, fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
 				errors = append(errors, BuildError{

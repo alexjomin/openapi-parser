@@ -110,6 +110,17 @@ type Pet struct {
 	JSONData            json.RawMessage           `json:"json_data"`
 	CustomString        otherpackage.CustomString `json:"custom_string"`
 	Test                Test                      `json:"test"`
+	Anonymous           struct {
+		Field string `json:"field"`
+	} `json:"anonymous"`
+}
+
+// AnonymousArray struct
+// @openapi:schema
+type AnonymousArray struct {
+	Data []struct {
+		ID string `json:"id"`
+	} `json:"data"`
 }
 
 // Dog struct
