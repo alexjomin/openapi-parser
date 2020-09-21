@@ -83,6 +83,7 @@ func PostFoo() {}
 // @openapi:schema
 type MapStringString map[string]string
 
+// WeirdInt type
 // @openapi:schema
 type WeirdInt int
 
