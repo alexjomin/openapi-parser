@@ -77,6 +77,16 @@ paths:
               $ref: '#/components/schemas/Pet'
 components:
   schemas:
+    AnonymousArray:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            properties:
+              id:
+                type: string
+            type: object
     AnyValue:
       description: 'Can be anything: string, number, array, object, etc., including
         `null`'
@@ -113,6 +123,11 @@ components:
           type: object
           additionalProperties:
             type: integer
+        anonymous:
+          type: object
+          properties:
+            field:
+              type: string
         children:
           type: object
           additionalProperties:
