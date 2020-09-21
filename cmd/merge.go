@@ -62,7 +62,7 @@ var mergeCmd = &cobra.Command{
 				url := k
 				for verb, action := range v {
 					logrus.WithField("verb", verb).WithField("url", url).Info("Adding Path")
-					main.AddAction(url, verb, action)
+					main.AddOperation(url, verb, action)
 				}
 			}
 

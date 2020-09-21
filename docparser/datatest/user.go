@@ -14,6 +14,7 @@ import (
 // /pets:
 //	get:
 //		description: "Returns all pets from the system that the user has access to"
+//		operationId: GetUser
 //		tags:
 //			- pet
 //		responses:
@@ -54,6 +55,9 @@ import (
 //                - api         # Production server
 //                - api.dev     # Development server
 //                - api.staging # Staging server
+//		externalDocs:
+//			description: External documentation
+//			url: "https://{environment}-docs.hello.com"
 func GetUser() {}
 
 // PostFoo returns a user corresponding to specified id

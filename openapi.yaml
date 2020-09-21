@@ -8,6 +8,7 @@ paths:
   /pets:
     get:
       description: Returns all pets from the system that the user has access to
+      operationId: GetUser
       responses:
         "200":
           content:
@@ -41,6 +42,20 @@ paths:
       - petstore_auth:
         - write:pets
         - read:pets
+      servers:
+      - url: https://{environment}.hello.com
+        description: what up
+        variables:
+          environment:
+            default: api
+            enum:
+            - api
+            - api.dev
+            - api.staging
+            description: ""
+      externalDocs:
+        description: External documentation
+        url: https://{environment}-docs.hello.com
     post:
       description: Returns all pets from the system that the user has access to
       responses:
@@ -171,3 +186,4 @@ components:
           type: string
     WeirdInt:
       type: integer
+x-tagGroups: []
