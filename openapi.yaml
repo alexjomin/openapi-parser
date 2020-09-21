@@ -41,6 +41,17 @@ paths:
       - petstore_auth:
         - write:pets
         - read:pets
+      servers:
+      - url: https://{environment}.hello.com
+        description: what up
+        variables:
+          environment:
+            default: api
+            enum:
+            - api
+            - api.dev
+            - api.staging
+            description: ""
     post:
       description: Returns all pets from the system that the user has access to
       responses:
@@ -62,6 +73,16 @@ paths:
               $ref: '#/components/schemas/Pet'
 components:
   schemas:
+    AnonymousArray:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            properties:
+              id:
+                type: string
+            type: object
     AnyValue:
       description: 'Can be anything: string, number, array, object, etc., including
         `null`'
@@ -98,6 +119,11 @@ components:
           type: object
           additionalProperties:
             type: integer
+        anonymous:
+          type: object
+          properties:
+            field:
+              type: string
         children:
           type: object
           additionalProperties:
@@ -171,3 +197,4 @@ components:
           type: string
     WeirdInt:
       type: integer
+x-tagGroups: []

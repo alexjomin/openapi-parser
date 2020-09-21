@@ -98,14 +98,14 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		p.Format = format
 		return &p, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		t, err := parseNamedType(gofile, ftpe.X, nil)
+		t, err := parseNamedType(gofile, ftpe.X, sel)
 		if err != nil {
 			return nil, err
 		}
 		t.Nullable = true
 		return t, nil
 	case *ast.ArrayType: // slice type
-		cp, err := parseNamedType(gofile, ftpe.Elt, nil)
+		cp, err := parseNamedType(gofile, ftpe.Elt, sel)
 		if err != nil {
 			return nil, err
 		}
@@ -122,13 +122,34 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 			if len(cp.Items) != 0 {
 				p.Items["items"] = cp.Items
 			}
+			if len(cp.Properties) != 0 {
+				p.Items["properties"] = cp.Properties
+			}
 		}
 		if cp.Ref != "" {
 			p.Items["$ref"] = cp.Ref
 		}
 		return &p, nil
 	case *ast.StructType:
-		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
+		p = newEntity()
+		p.Type = "object"
+
+		for _, field := range ftpe.Fields.List {
+			j, err := parseJSONTag(ftpe.Fields.List[0])
+			if err != nil {
+				return nil, err
+			}
+
+			pnt, err := parseNamedType(gofile, field.Type, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			p.Properties[j.name] = pnt
+
+		}
+
+		return &p, nil
 	case *ast.SelectorExpr:
 		t, err := parseNamedType(gofile, ftpe.X, ftpe.Sel)
 		if err != nil {
@@ -137,8 +158,8 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 
 		return t, nil
 	case *ast.MapType:
-		k, kerr := parseNamedType(gofile, ftpe.Key, nil)
-		v, verr := parseNamedType(gofile, ftpe.Value, nil)
+		k, kerr := parseNamedType(gofile, ftpe.Key, sel)
+		v, verr := parseNamedType(gofile, ftpe.Value, sel)
 		if kerr != nil || verr != nil || k.Type != "string" {
 			// keys can only be of type string
 			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)

@@ -139,9 +139,51 @@ func TestParseNamedType(t *testing.T) {
 			}},
 		},
 		{
-			description:   "Should throw error when parse *ast.StructType",
-			expr:          &ast.StructType{},
-			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(bool=false)}) not yet unsupported",
+			description: "Should *ast.ArrayType with *ast.StructType",
+			expr: &ast.ArrayType{
+				Elt: &ast.StructType{
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Type: &ast.Ident{Name: "string"},
+								Tag:  &ast.BasicLit{Value: "`json:\"str\"`"},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &schema{
+				Type: "array",
+				Items: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]*schema{
+						"str": {
+							Type: "string",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Should *ast.StructType to anonymous struct",
+			expr: &ast.StructType{
+				Fields: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Type: &ast.Ident{Name: "string"},
+							Tag:  &ast.BasicLit{Value: "`json:\"str\"`"},
+						},
+					},
+				},
+			},
+			expectedSchema: &schema{
+				Type: "object",
+				Properties: map[string]*schema{
+					"str": {
+						Type: "string",
+					},
+				},
+			},
 		},
 		{
 			description: "Should throw error when parse *ast.MapType[nil]nil",
