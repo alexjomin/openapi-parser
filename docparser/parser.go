@@ -98,11 +98,18 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		p.Format = format
 		return &p, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		t, _ := parseNamedType(gofile, ftpe.X, nil)
+		t, err := parseNamedType(gofile, ftpe.X, nil)
+		if err != nil {
+			return nil, err
+		}
 		t.Nullable = true
 		return t, nil
 	case *ast.ArrayType: // slice type
-		cp, _ := parseNamedType(gofile, ftpe.Elt, nil)
+		cp, err := parseNamedType(gofile, ftpe.Elt, nil)
+		if err != nil {
+			return nil, err
+		}
+
 		if cp.Format == "binary" {
 			p.Type = "string"
 			p.Format = "binary"
@@ -123,7 +130,11 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 	case *ast.StructType:
 		return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
 	case *ast.SelectorExpr:
-		t, _ := parseNamedType(gofile, ftpe.X, ftpe.Sel)
+		t, err := parseNamedType(gofile, ftpe.X, ftpe.Sel)
+		if err != nil {
+			return nil, err
+		}
+
 		return t, nil
 	case *ast.MapType:
 		k, kerr := parseNamedType(gofile, ftpe.Key, nil)

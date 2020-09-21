@@ -2,6 +2,7 @@ package docparser
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"os"
 	"path/filepath"
@@ -290,7 +291,7 @@ func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath strin
 	spec.composeSpecSchemas()
 }
 
-func (spec *openAPI) parsePaths(f *ast.File) (errors []error) {
+func (spec *openAPI) parsePaths(f *ast.File) (errs []error) {
 	for _, s := range f.Comments {
 		t := s.Text()
 		// Test if comments is a path
@@ -310,7 +311,7 @@ func (spec *openAPI) parsePaths(f *ast.File) (errors []error) {
 				WithError(err).
 				WithField("content", content).
 				Error("Unable to unmarshal path")
-			errors = append(errors, &BuildError{
+			errs = append(errs, &BuildError{
 				Err:     err,
 				Content: content,
 				Message: "unable to unmarshal path",
@@ -328,6 +329,10 @@ func (spec *openAPI) parsePaths(f *ast.File) (errors []error) {
 							WithField("url", url).
 							WithField("verb", currentVerb).
 							Error("Verb for this path already exists")
+						errs = append(errs, &BuildError{
+							Err:     errors.New("verb for this path already exists"),
+							Content: fmt.Sprintf("url: %s, verb: %s", url, currentVerb),
+						})
 						continue
 					}
 					spec.Paths[url][currentVerb] = currentDesc
@@ -403,12 +408,21 @@ func (spec *openAPI) composeSpecSchemas() {
 	}
 }
 
-func (spec *openAPI) parseMaps(mp *ast.MapType) *schema {
+func (spec *openAPI) parseMaps(mp *ast.MapType) (*schema, []error) {
+	errors := make([]error, 0)
+
 	// only map[string]
 	if i, ok := mp.Key.(*ast.Ident); ok {
-		t, _, _ := parseIdentProperty(i)
+		t, _, err := parseIdentProperty(i)
+		if err != nil {
+			errors = append(errors, BuildError{
+				Err:     err,
+				Message: "could not parse ident property from map",
+			})
+		}
+
 		if t != "string" {
-			return nil
+			return nil, errors
 		}
 	}
 
@@ -418,13 +432,15 @@ func (spec *openAPI) parseMaps(mp *ast.MapType) *schema {
 
 	// map[string]interface{}
 	if _, ok := mp.Value.(*ast.InterfaceType); ok {
-		return &e
+		return &e, errors
 	}
 
-	return nil
+	return nil, errors
 }
 
-func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} {
+func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}, []error) {
+	errors := make([]error, 0)
+
 	var cs *composedSchema
 	e := newEntity()
 	e.Type = "object"
@@ -443,6 +459,11 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} 
 
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
+				errors = append(errors, BuildError{
+					Err:     err,
+					Content: fld.Names[0].String(),
+					Message: "can't parse the type of field in struct",
+				})
 				continue
 			}
 
@@ -465,6 +486,10 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} 
 			p, err := parseNamedType(f, fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
+				errors = append(errors, BuildError{
+					Err:     err,
+					Message: "can't parse the type of composed field in struct",
+				})
 				continue
 			}
 
@@ -473,10 +498,10 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) interface{} 
 	}
 
 	if cs == nil {
-		return &e
+		return &e, errors
 	} else {
 		cs.AllOf = append(cs.AllOf, &e)
-		return cs
+		return cs, errors
 	}
 }
 
@@ -512,13 +537,23 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 
 				switch n := ts.Type.(type) {
 				case *ast.MapType:
-					entity = spec.parseMaps(n)
+					var errs []error
+					entity, errs = spec.parseMaps(n)
+					if len(errs) != 0 {
+						errors = append(errors, errs...)
+					}
+
 					logrus.
 						WithField("name", entityName).
 						Info("Parsing Schema")
 
 				case *ast.StructType:
-					entity = spec.parseStructs(f, n)
+					var errs []error
+					entity, errs = spec.parseStructs(f, n)
+					if len(errs) != 0 {
+						errors = append(errors, errs...)
+					}
+
 					mtd, ok := entity.(metaSchema)
 					if ok {
 						mtd.SetCustomName(entityName)
@@ -534,7 +569,6 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						errors = append(errors, &BuildError{
 							Err:     err,
-							Content: "",
 							Message: "Can't parse the type of field in struct",
 						})
 						continue
@@ -552,6 +586,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 					p, err := parseNamedType(f, ts.Type, nil)
 					if err != nil {
 						logrus.WithError(err).Error("can't parse custom type")
+						errors = append(errors, BuildError{
+							Err:     err,
+							Message: "can't parse custom type",
+						})
 						continue
 					}
 					p.SetCustomName(entityName)
