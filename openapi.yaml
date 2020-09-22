@@ -16,7 +16,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Pet'
+                  $ref: "#/components/schemas/Pet"
           description: A list of pets.
         "302":
           content: {}
@@ -27,32 +27,32 @@ paths:
               schema:
                 type: string
       tags:
-      - pet
+        - pet
       parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: integer
-          enum:
-          - "3"
-          - "4"
-        required: true
-        description: Numeric ID of the user to get
-      security:
-      - petstore_auth:
-        - write:pets
-        - read:pets
-      servers:
-      - url: https://{environment}.hello.com
-        description: what up
-        variables:
-          environment:
-            default: api
+        - in: path
+          name: deviceId
+          schema:
+            type: integer
             enum:
-            - api
-            - api.dev
-            - api.staging
-            description: ""
+              - "3"
+              - "4"
+          required: true
+          description: Numeric ID of the user to get
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      servers:
+        - url: https://{environment}.hello.com
+          description: what up
+          variables:
+            environment:
+              default: api
+              enum:
+                - api
+                - api.dev
+                - api.staging
+              description: ""
       externalDocs:
         description: External documentation
         url: https://{environment}-docs.hello.com
@@ -65,7 +65,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Pet'
+                  $ref: "#/components/schemas/Pet"
           description: Post a new pet
       parameters: []
       requestBody:
@@ -74,22 +74,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Pet'
+              $ref: "#/components/schemas/Pet"
 components:
   schemas:
+    AnonymousArray:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            properties:
+              id:
+                type: string
+            type: object
     AnyValue:
-      description: 'Can be anything: string, number, array, object, etc., including
-        `null`'
+      description:
+        "Can be anything: string, number, array, object, etc., including
+        `null`"
     CustomString:
       type: string
     Dog:
       allOf:
-      - $ref: '#/components/schemas/Pet'
-      - $ref: '#/components/schemas/WeirdCustomName'
-      - type: object
-        properties:
-          name:
-            type: string
+        - $ref: "#/components/schemas/Pet"
+        - $ref: "#/components/schemas/WeirdCustomName"
+        - type: object
+          properties:
+            name:
+              type: string
     EditableFoo:
       type: object
       properties:
@@ -103,7 +114,7 @@ components:
     MapStringString: null
     Pet:
       required:
-      - string
+        - string
       type: object
       properties:
         ByteData:
@@ -113,18 +124,23 @@ components:
           type: object
           additionalProperties:
             type: integer
+        anonymous:
+          type: object
+          properties:
+            field:
+              type: string
         children:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/Pet'
+            $ref: "#/components/schemas/Pet"
         custom_string:
-          $ref: '#/components/schemas/CustomString'
+          $ref: "#/components/schemas/CustomString"
         enumTest:
           type: string
           enum:
-          - UNKNOWN
-          - MALE
-          - FEMALE
+            - UNKNOWN
+            - MALE
+            - FEMALE
         id:
           type: string
         int:
@@ -137,7 +153,7 @@ components:
           type: string
         pointerOfStruct:
           nullable: true
-          $ref: '#/components/schemas/Foo'
+          $ref: "#/components/schemas/Foo"
         pointerOfTime:
           nullable: true
           type: string
@@ -145,7 +161,7 @@ components:
         sliceOfStruct:
           type: array
           items:
-            $ref: '#/components/schemas/Foo'
+            $ref: "#/components/schemas/Foo"
         sliceofInt:
           type: array
           items:
@@ -167,16 +183,16 @@ components:
         string:
           type: string
         struct:
-          $ref: '#/components/schemas/Foo'
+          $ref: "#/components/schemas/Foo"
         test:
-          $ref: '#/components/schemas/Test'
+          $ref: "#/components/schemas/Test"
         time:
           type: string
           format: date-time
     Signals:
       type: array
       items:
-        $ref: '#/components/schemas/Foo'
+        $ref: "#/components/schemas/Foo"
     Test:
       type: integer
     WeirdCustomName:
