@@ -113,6 +113,11 @@ type composedSchema struct {
 	AllOf    []*schema `yaml:"allOf"`
 }
 
+type externalDoc struct {
+	Description string `yaml:",omitempty"`
+	Url         string `yaml:"url,omitempty"`
+}
+
 func (c *composedSchema) RealName() string {
 	if c == nil {
 		return ""
@@ -184,23 +189,22 @@ func (e BuildError) Error() string {
 	return err
 }
 
-type items struct {
-	Type string
-}
+// /pets: operation
+type path map[string]operation
 
-// /pets: action
-type path map[string]action
-
-type action struct {
-	Summary     string `yaml:",omitempty"`
-	Description string
-	Responses   map[string]response
-	Tags        []string `yaml:",omitempty"`
-	Parameters  []parameter
-	RequestBody requestBody           `yaml:"requestBody,omitempty"`
-	Security    []map[string][]string `yaml:",omitempty"`
-	Headers     map[string]header     `yaml:",omitempty"`
-	Servers     []server              `yaml:",omitempty"`
+type operation struct {
+	Summary      string `yaml:",omitempty"`
+	Description  string
+	ID           string `yaml:"operationId,omitempty"`
+	Responses    map[string]response
+	Tags         []string `yaml:",omitempty"`
+	Parameters   []parameter
+	RequestBody  requestBody           `yaml:"requestBody,omitempty"`
+	Security     []map[string][]string `yaml:",omitempty"`
+	Headers      map[string]header     `yaml:",omitempty"`
+	Deprecated   bool                  `yaml:",omitempty"`
+	Servers      []server              `yaml:",omitempty"`
+	ExternalDocs externalDoc           `yaml:"externalDocs,omitempty"`
 }
 
 type parameter struct {
@@ -324,7 +328,7 @@ func (spec *openAPI) parsePaths(f *ast.File) (errs []error) {
 			if _, ok := spec.Paths[url]; ok {
 				// Iterate over verbs
 				for currentVerb, currentDesc := range path {
-					if _, actionAlreadyExists := spec.Paths[url][currentVerb]; actionAlreadyExists {
+					if _, operationAlreadyExists := spec.Paths[url][currentVerb]; operationAlreadyExists {
 						logrus.
 							WithField("url", url).
 							WithField("verb", currentVerb).
@@ -608,9 +612,9 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 	return
 }
 
-func (spec *openAPI) AddAction(path, verb string, a action) {
+func (spec *openAPI) AddOperation(path, verb string, a operation) {
 	if _, ok := spec.Paths[path]; !ok {
-		spec.Paths[path] = make(map[string]action)
+		spec.Paths[path] = make(map[string]operation)
 	}
 	spec.Paths[path][verb] = a
 }

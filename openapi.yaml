@@ -8,6 +8,7 @@ paths:
   /pets:
     get:
       description: Returns all pets from the system that the user has access to
+      operationId: GetUser
       responses:
         "200":
           content:
@@ -52,6 +53,9 @@ paths:
             - api.dev
             - api.staging
             description: ""
+      externalDocs:
+        description: External documentation
+        url: https://{environment}-docs.hello.com
     post:
       description: Returns all pets from the system that the user has access to
       responses:
