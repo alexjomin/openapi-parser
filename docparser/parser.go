@@ -102,7 +102,11 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		if err != nil {
 			return nil, err
 		}
-		t.Nullable = true
+		if t.Ref == "" {
+			// if ref, cannot have other properties
+			tBool := true
+			t.Nullable = &tBool
+		}
 		return t, nil
 	case *ast.ArrayType: // slice type
 		cp, err := parseNamedType(gofile, ftpe.Elt, sel)

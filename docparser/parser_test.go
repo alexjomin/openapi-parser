@@ -82,6 +82,7 @@ func TestParseFile(t *testing.T) {
 }
 
 func TestParseNamedType(t *testing.T) {
+	tBool := true
 	testCases := []parseNamedTypeTestCase{
 		{
 			description:    "Should parse *ast.Ident with unknown name",
@@ -107,7 +108,7 @@ func TestParseNamedType(t *testing.T) {
 		{
 			description:    "Should parse *ast.StarExpr and set Nullable",
 			expr:           &ast.StarExpr{X: &ast.Ident{Name: "time"}},
-			expectedSchema: &schema{Type: "string", Format: "date-time", Nullable: true},
+			expectedSchema: &schema{Type: "string", Format: "date-time", Nullable: &tBool},
 		},
 		{
 			description: "Should parse *ast.ArrayType with known type",
