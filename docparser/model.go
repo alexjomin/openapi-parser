@@ -141,7 +141,7 @@ func (c *composedSchema) SetCustomName(customName string) {
 
 type schema struct {
 	metadata             `yaml:"-"`
-	Nullable             bool                   `yaml:"nullable,omitempty"`
+	Nullable             *bool                  `yaml:"nullable,omitempty"`
 	Required             []string               `yaml:"required,omitempty"`
 	Type                 string                 `yaml:",omitempty"`
 	Items                map[string]interface{} `yaml:",omitempty"`
