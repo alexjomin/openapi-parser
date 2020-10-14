@@ -374,14 +374,23 @@ func replaceSchemaNameToCustom(s *schema) {
 	if len(refSplit) != 4 {
 		return
 	}
+
 	if replacementSchema, found := registeredSchemas[refSplit[3]]; found {
-		meta, ok := replacementSchema.(metaSchema)
+		meta, ok := replacementSchema.(*schema)
 		if !ok {
 			return
 		}
-		refSplit[3] = meta.CustomName()
+		switch meta.Type {
+		case "array":
+			s.Ref = meta.Ref
+			s.Items = meta.Items
+			s.Type = meta.Type
+			break
+		default:
+			refSplit[3] = meta.CustomName()
+			s.Ref = strings.Join(refSplit, "/")
+		}
 	}
-	s.Ref = strings.Join(refSplit, "/")
 }
 
 func (spec *openAPI) composeSpecSchemas() {
