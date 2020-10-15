@@ -468,7 +468,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 				e.Required = append(e.Required, j.name)
 			}
 
-			p, err := parseNamedType(f, fld.Type, nil)
+			p, err := parseNamedType(fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
 				errors = append(errors, BuildError{
@@ -495,7 +495,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 				}
 			}
 
-			p, err := parseNamedType(f, fld.Type, nil)
+			p, err := parseNamedType(fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
 				errors = append(errors, BuildError{
@@ -576,7 +576,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 
 				case *ast.ArrayType:
 					e := newEntity()
-					p, err := parseNamedType(f, n.Elt, nil)
+					p, err := parseNamedType(n.Elt, nil)
 					if err != nil {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						errors = append(errors, &BuildError{
@@ -595,7 +595,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 					entity = &e
 
 				default:
-					p, err := parseNamedType(f, ts.Type, nil)
+					p, err := parseNamedType(ts.Type, nil)
 					if err != nil {
 						logrus.WithError(err).Error("can't parse custom type")
 						errors = append(errors, BuildError{
