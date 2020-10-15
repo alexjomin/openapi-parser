@@ -250,6 +250,32 @@ func TestParseNamedType(t *testing.T) {
 			expr:          &ast.FuncType{},
 			expectedError: "expr (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) type (&{%!s(token.Pos=0) %!s(*ast.FieldList=<nil>) %!s(*ast.FieldList=<nil>)}) is unsupported for a schema",
 		},
+		{
+			description: "Should *ast.ArrayType with *ast.StructType",
+			expr: &ast.ArrayType{
+				Elt: &ast.StructType{
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Type: &ast.Ident{Name: "string"},
+								Tag:  &ast.BasicLit{Value: "`json:\"str\"`"},
+							},
+						},
+					},
+				},
+			},
+			expectedSchema: &schema{
+				Type: "array",
+				Items: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]*schema{
+						"str": {
+							Type: "string",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
