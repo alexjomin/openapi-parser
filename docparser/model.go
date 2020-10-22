@@ -531,9 +531,9 @@ func (spec *openAPI) parseExample(comment string, exampleType ast.Expr) (interfa
 	}
 
 	line := string(exampleLines[0])
-	lineSplit := strings.Split(line, " ")
+	example := line[len("@openapi:example "):]
 
-	return convertExample(lineSplit[1], exampleType)
+	return convertExample(example, exampleType)
 }
 
 func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {

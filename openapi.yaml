@@ -181,6 +181,7 @@ components:
             type: string
         string:
           type: string
+          example: Some String Example
         struct:
           $ref: '#/components/schemas/Foo'
         test:
