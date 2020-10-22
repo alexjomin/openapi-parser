@@ -152,7 +152,7 @@ type schema struct {
 	Properties           map[string]*schema     `yaml:",omitempty"`
 	AdditionalProperties *schema                `yaml:"additionalProperties,omitempty"`
 	OneOf                []schema               `yaml:"oneOf,omitempty"`
-	Example              string             `yaml:"example,omitempty"`
+	Example              interface{}            `yaml:"example,omitempty"`
 }
 
 func (s *schema) RealName() string {
@@ -453,7 +453,10 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 
 	for _, fld := range tpe.Fields.List {
 
-		example, _ := spec.parseExample(fld)
+		example, err := spec.parseExample(fld.Doc.Text(), fld.Type)
+		if err != nil {
+			errors = append(errors, err)
+		}
 
 		if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
 			j, err := parseJSONTag(fld)
@@ -476,7 +479,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 			}
 
 			if example != nil {
-				p.Example = *example
+				p.Example = example
 			}
 
 			if len(j.enum) > 0 {
@@ -506,7 +509,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 			}
 
 			if example != nil {
-				p.Example = *example
+				p.Example = example
 			}
 
 			cs.AllOf = append(cs.AllOf, p)
@@ -521,10 +524,8 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 	}
 }
 
-func (spec *openAPI) parseExample(f *ast.Field) (*string, error) {
-	fd := f.Doc.Text()
-
-	exampleLines := regexpExample.FindSubmatch([]byte(fd))
+func (spec *openAPI) parseExample(comment string, exampleType ast.Expr) (interface{}, error) {
+	exampleLines := regexpExample.FindSubmatch([]byte(comment))
 	if len(exampleLines) == 0 {
 		return nil, nil
 	}
@@ -532,7 +533,7 @@ func (spec *openAPI) parseExample(f *ast.Field) (*string, error) {
 	line := string(exampleLines[0])
 	lineSplit := strings.Split(line, " ")
 
-	return &lineSplit[1], nil
+	return convertExample(lineSplit[1], exampleType)
 }
 
 func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
@@ -554,6 +555,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 
 				// Looking for openapi entity
 				a := regexpSchema.FindSubmatch([]byte(t))
+				example, err := spec.parseExample(t, ts.Type)
+				if err != nil {
+					errors = append(errors, err)
+				}
 
 				if len(a) == 0 {
 					continue
@@ -631,6 +636,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 				}
 
 				if entity != nil {
+					s, ok := entity.(*schema)
+					if ok && example != nil {
+						s.Example = example
+					}
 					registeredSchemas[realName] = entity
 				}
 			}

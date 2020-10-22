@@ -168,9 +168,9 @@ components:
         sliceofSliceofFloat:
           type: array
           items:
-            type: array
             items:
               type: number
+            type: array
         sliceofString:
           type: array
           items:
@@ -188,6 +188,8 @@ components:
         time:
           type: string
           format: date-time
+        weird_int:
+          $ref: '#/components/schemas/WeirdInt'
     Signals:
       type: array
       items:
@@ -201,4 +203,5 @@ components:
           type: string
     WeirdInt:
       type: integer
+      example: 42
 x-tagGroups: []
