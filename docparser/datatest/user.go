@@ -94,7 +94,8 @@ type WeirdInt int
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	ID                  bson.ObjectId             `json:"id"`
+	// @openapi:example f1dad44f-600a-4fe3-8ae1-fdc35f99bdb0
+	ID                  bson.ObjectId             `json:"id"` // test
 	String              string                    `json:"string,omitempty" validate:"required"`
 	Int                 int                       `json:"int,omitempty"`
 	PointerOfString     *string                   `json:"pointerOfString"`

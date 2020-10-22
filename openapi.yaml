@@ -142,6 +142,7 @@ components:
           - FEMALE
         id:
           type: string
+          example: f1dad44f-600a-4fe3-8ae1-fdc35f99bdb0
         int:
           type: integer
         json_data:
@@ -151,7 +152,6 @@ components:
           nullable: true
           type: string
         pointerOfStruct:
-          nullable: true
           $ref: '#/components/schemas/Foo'
         pointerOfTime:
           nullable: true
@@ -168,9 +168,9 @@ components:
         sliceofSliceofFloat:
           type: array
           items:
+            type: array
             items:
               type: number
-            type: array
         sliceofString:
           type: array
           items:
