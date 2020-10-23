@@ -95,6 +95,7 @@ components:
     Dog:
       allOf:
       - $ref: '#/components/schemas/Pet'
+      - $ref: '#/components/schemas/animal'
       - $ref: '#/components/schemas/WeirdCustomName'
       - type: object
         properties:
@@ -151,7 +152,6 @@ components:
           nullable: true
           type: string
         pointerOfStruct:
-          nullable: true
           $ref: '#/components/schemas/Foo'
         pointerOfTime:
           nullable: true
@@ -201,4 +201,6 @@ components:
           type: string
     WeirdInt:
       type: integer
+    animal:
+      type: object
 x-tagGroups: []
