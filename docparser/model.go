@@ -450,6 +450,9 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 	e.Type = "object"
 
 	for _, fld := range tpe.Fields.List {
+		if len(fld.Names) > 0 && fld.Names[0] != nil && !fld.Names[0].IsExported() {
+			continue
+		}
 		if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
 			j, err := parseJSONTag(fld)
 			if j.ignore {

@@ -127,13 +127,21 @@ type AnonymousArray struct {
 	} `json:"data"`
 }
 
+// @openapi:schema
+type animal struct {
+	species string
+}
+
 // Dog struct
 // @openapi:schema
 type Dog struct {
 	Pet
+	animal
 	otherpackage.Data
 
-	Name string `json:"name"`
+	Name    string `json:"name"`
+	weight  int
+	friends []animal
 }
 
 // Foo struct
