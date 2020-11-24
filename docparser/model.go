@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,6 +19,7 @@ var (
 	regexpSchema  = regexp.MustCompile(`@openapi:schema:?(\w+)?:?(?:\[([\w,]+)\])?`)
 	regexpExample = regexp.MustCompile(`@openapi:example [^\v\n]+`)
 	regexpInfo    = regexp.MustCompile("@openapi:info\n([^@]*)$")
+	regexpImport  = regexp.MustCompile(`import\(([^\)]+)\)`)
 	tab           = regexp.MustCompile(`\t`)
 
 	registeredSchemas = map[string]interface{}{
@@ -718,12 +720,40 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 				WithField("description_scanned", description).
 				Warn("Description already exists and is different!")
 		} else {
-			logrus.
-				WithField("field", "description").
-				WithField("value", description).
-				Info("Parsing info")
-			spec.Info.Description = description
+			p, err := parseImportContentPath(description)
+			// no need to import a file
+			if err != nil {
+				logrus.
+					WithField("field", "description").
+					WithField("value", description).
+					Info("Parsing info")
+				spec.Info.Description = description
+			} else {
+				c, err := ioutil.ReadFile(p)
+
+				if err != nil {
+					logrus.
+						WithField("File", p).
+						WithError(err).
+						Error("Could not import file")
+					return
+				}
+
+				logrus.
+					WithField("field", "description").
+					WithField("value", "content of file: "+p).
+					Info("Parsing info")
+				spec.Info.Description = string(c)
+			}
 		}
 	}
 	return
+}
+
+func parseImportContentPath(str string) (string, error) {
+	matches := regexpImport.FindStringSubmatch(str)
+	if len(matches) == 2 {
+		return matches[1], nil
+	}
+	return "", errors.New("Not an import")
 }
