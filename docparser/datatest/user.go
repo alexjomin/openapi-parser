@@ -89,14 +89,18 @@ type MapStringString map[string]string
 
 // WeirdInt type
 // @openapi:schema
+// @openapi:example 42
 type WeirdInt int
 
 // Pet struct
 // @openapi:schema
 type Pet struct {
-	ID                  bson.ObjectId             `json:"id"`
+	// @openapi:example f1dad44f-600a-4fe3-8ae1-fdc35f99bdb0
+	ID bson.ObjectId `json:"id"` // test
+	// @openapi:example Some String Example
 	String              string                    `json:"string,omitempty" validate:"required"`
 	Int                 int                       `json:"int,omitempty"`
+	WeirdInt            WeirdInt                  `json:"weird_int,omitempty"`
 	PointerOfString     *string                   `json:"pointerOfString"`
 	SliceOfString       []string                  `json:"sliceofString"`
 	SliceOfInt          []int                     `json:"sliceofInt"`
