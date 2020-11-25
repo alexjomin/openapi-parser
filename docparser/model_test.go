@@ -157,3 +157,44 @@ func TestParseInfos(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseImportContentPath(t *testing.T) {
+	type args struct {
+		str string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "test correct string",
+			args: args{
+				"import(readme.md)",
+			},
+			want:    "readme.md",
+			wantErr: false,
+		},
+		{
+			name: "test not an import file",
+			args: args{
+				"some random content for the test",
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseImportContentPath(tt.args.str)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseImportContentPath() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("parseImportContentPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
