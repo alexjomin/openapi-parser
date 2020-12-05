@@ -378,14 +378,23 @@ func replaceSchemaNameToCustom(s *schema) {
 	if len(refSplit) != 4 {
 		return
 	}
+
 	if replacementSchema, found := registeredSchemas[refSplit[3]]; found {
-		meta, ok := replacementSchema.(metaSchema)
+		meta, ok := replacementSchema.(*schema)
 		if !ok {
 			return
 		}
-		refSplit[3] = meta.CustomName()
+		switch meta.Type {
+		case "array":
+			s.Ref = meta.Ref
+			s.Items = meta.Items
+			s.Type = meta.Type
+			break
+		default:
+			refSplit[3] = meta.CustomName()
+			s.Ref = strings.Join(refSplit, "/")
+		}
 	}
-	s.Ref = strings.Join(refSplit, "/")
 }
 
 func (spec *openAPI) composeSpecSchemas() {
@@ -469,7 +478,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 				e.Required = append(e.Required, j.name)
 			}
 
-			p, err := parseNamedType(f, fld.Type, nil)
+			p, err := parseNamedType(fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Names[0]).Error("Can't parse the type of field in struct")
 				errors = append(errors, BuildError{
@@ -500,7 +509,7 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 				}
 			}
 
-			p, err := parseNamedType(f, fld.Type, nil)
+			p, err := parseNamedType(fld.Type, nil)
 			if err != nil {
 				logrus.WithError(err).WithField("field", fld.Type).Error("Can't parse the type of composed field in struct")
 				errors = append(errors, BuildError{
@@ -601,7 +610,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 
 				case *ast.ArrayType:
 					e := newEntity()
-					p, err := parseNamedType(f, n.Elt, nil)
+					p, err := parseNamedType(n.Elt, nil)
 					if err != nil {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						errors = append(errors, &BuildError{
@@ -620,7 +629,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 					entity = &e
 
 				default:
-					p, err := parseNamedType(f, ts.Type, nil)
+					p, err := parseNamedType(ts.Type, nil)
 					if err != nil {
 						logrus.WithError(err).Error("can't parse custom type")
 						errors = append(errors, BuildError{

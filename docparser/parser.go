@@ -78,7 +78,7 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	return j, nil
 }
 
-func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, error) {
+func parseNamedType(expr ast.Expr, sel *ast.Ident) (*schema, error) {
 	p := schema{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
@@ -98,7 +98,7 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		p.Format = format
 		return &p, nil
 	case *ast.StarExpr: // pointer to something, optional by default
-		t, err := parseNamedType(gofile, ftpe.X, sel)
+		t, err := parseNamedType(ftpe.X, sel)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		}
 		return t, nil
 	case *ast.ArrayType: // slice type
-		cp, err := parseNamedType(gofile, ftpe.Elt, sel)
+		cp, err := parseNamedType(ftpe.Elt, sel)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 				return nil, err
 			}
 
-			pnt, err := parseNamedType(gofile, field.Type, nil)
+			pnt, err := parseNamedType(field.Type, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -155,15 +155,15 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 
 		return &p, nil
 	case *ast.SelectorExpr:
-		t, err := parseNamedType(gofile, ftpe.X, ftpe.Sel)
+		t, err := parseNamedType(ftpe.X, ftpe.Sel)
 		if err != nil {
 			return nil, err
 		}
 
 		return t, nil
 	case *ast.MapType:
-		k, kerr := parseNamedType(gofile, ftpe.Key, sel)
-		v, verr := parseNamedType(gofile, ftpe.Value, sel)
+		k, kerr := parseNamedType(ftpe.Key, sel)
+		v, verr := parseNamedType(ftpe.Value, sel)
 		if kerr != nil || verr != nil || k.Type != "string" {
 			// keys can only be of type string
 			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
