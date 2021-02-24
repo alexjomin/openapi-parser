@@ -243,7 +243,7 @@ type content struct {
 
 func validatePath(path string, parseVendors []string) bool {
 	// vendoring path
-    dir,fn := filepath.Split(path)
+	dir, fn := filepath.Split(path)
 	if strings.Contains(dir, "vendor") {
 		found := false
 		for _, vendorPath := range parseVendors {
@@ -267,10 +267,10 @@ func validatePath(path string, parseVendors []string) bool {
 		return false
 	}
 
-  // _ file
-  if strings.HasPrefix(fn, "_") {
-    return false
-  }
+	// _ file
+	if strings.HasPrefix(fn, "_") {
+		return false
+	}
 
 	return true
 }
@@ -292,13 +292,13 @@ func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath strin
 		return nil
 	}
 
-	for _,pt:=range strings.Split(path, ",") {
-      if err := filepath.Walk(pt, walker);err != nil {
-        os.Exit(1)
-      }
-    }
+	for _, pt := range strings.Split(path, ",") {
+		if err := filepath.Walk(pt, walker); err != nil {
+			os.Exit(1)
+		}
+	}
 
-	if err := filepath.Walk(vendorsPath, walker);err != nil {
+	if err := filepath.Walk(vendorsPath, walker); err != nil {
 		os.Exit(1)
 	}
 
