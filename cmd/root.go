@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	outputPath   string
-	inputPath    string
-	parseVendors []string
-	vendorsPath  string
-	exitError    bool
+	outputPath    string
+	inputPath     string
+	parseVendors  []string
+	vendorsPath   string
+	externalTypes string
+	exitError     bool
 )
 
 // RootCmd represents the root command
@@ -26,7 +27,7 @@ var RootCmd = &cobra.Command{
 	Long:  `Parse comments in code to generate an OpenAPI documentation`,
 	Run: func(cmd *cobra.Command, args []string) {
 		spec := docparser.NewOpenAPI()
-		spec.Parse(inputPath, parseVendors, vendorsPath, exitError)
+		spec.Parse(inputPath, parseVendors, vendorsPath, externalTypes, exitError)
 		d, err := yaml.Marshal(&spec)
 		if err != nil {
 			log.Fatalf("error: %v", err)
@@ -49,5 +50,6 @@ func init() {
 	RootCmd.Flags().StringVar(&inputPath, "path", ".", "The Folder to parse")
 	RootCmd.Flags().StringArrayVar(&parseVendors, "parse-vendors", []string{}, "Give the vendor to parse")
 	RootCmd.Flags().StringVar(&vendorsPath, "vendors-path", "vendor", "Give the vendor path")
+	RootCmd.Flags().StringVar(&externalTypes, "types", "types-formats.tsv", "External types csv file")
 	RootCmd.Flags().BoolVar(&exitError, "exit-error", false, "When an error occurs on parsing, exit with a code > 0")
 }

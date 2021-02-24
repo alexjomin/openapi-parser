@@ -1,0 +1,3 @@
+name                	type  	format
+util_guid.GuidString	string	uuid
+api_sys             	string

@@ -243,7 +243,8 @@ type content struct {
 
 func validatePath(path string, parseVendors []string) bool {
 	// vendoring path
-	if strings.Contains(path, "vendor") {
+	dir, fn := filepath.Split(path)
+	if strings.Contains(dir, "vendor") {
 		found := false
 		for _, vendorPath := range parseVendors {
 			if strings.Contains(path, vendorPath) {
@@ -257,21 +258,26 @@ func validatePath(path string, parseVendors []string) bool {
 	}
 
 	// not golang file
-	if !strings.HasSuffix(path, ".go") {
+	if !strings.HasSuffix(fn, ".go") {
 		return false
 	}
 
 	// dot file
-	if strings.HasPrefix(path, ".") {
+	if strings.HasPrefix(fn, ".") {
+		return false
+	}
+
+	// _ file
+	if strings.HasPrefix(fn, "_") {
 		return false
 	}
 
 	return true
 }
 
-func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string, exitNonZeroOnError bool) {
+func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath string, externalTypes string, exitNonZeroOnError bool) {
 	// fset := token.NewFileSet() // positions are relative to fset
-
+	_ = TsvLoadTypes(externalTypes)
 	walker := func(path string, f os.FileInfo, err error) error {
 		if validatePath(path, parseVendors) {
 			astFile, _ := parseFile(path)
@@ -286,13 +292,13 @@ func (spec *openAPI) Parse(path string, parseVendors []string, vendorsPath strin
 		return nil
 	}
 
-	err := filepath.Walk(path, walker)
-	if err != nil {
-		os.Exit(1)
+	for _, pt := range strings.Split(path, ",") {
+		if err := filepath.Walk(pt, walker); err != nil {
+			os.Exit(1)
+		}
 	}
 
-	err = filepath.Walk(vendorsPath, walker)
-	if err != nil {
+	if err := filepath.Walk(vendorsPath, walker); err != nil {
 		os.Exit(1)
 	}
 
@@ -421,7 +427,7 @@ func (spec *openAPI) parseMaps(mp *ast.MapType) (*schema, []error) {
 
 	// only map[string]
 	if i, ok := mp.Key.(*ast.Ident); ok {
-		t, _, err := parseIdentProperty(i)
+		t, _, err := parseIdentProperty(i, nil)
 		if err != nil {
 			errors = append(errors, BuildError{
 				Err:     err,
