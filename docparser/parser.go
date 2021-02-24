@@ -1,6 +1,7 @@
 package docparser
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -76,12 +77,11 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	}
 	return j, nil
 }
-/*
 func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, error) {
 	p := schema{}
 	switch ftpe := expr.(type) {
 	case *ast.Ident: // simple value
-		t, format, err := parseIdentProperty(ftpe)
+		t, format, err := parseIdentProperty(ftpe, sel)
 		if err != nil {
 			p.Ref = "#/components/schemas/"
 			if sel != nil {
@@ -163,7 +163,11 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 	case *ast.MapType:
 		k, kerr := parseNamedType(gofile, ftpe.Key, sel)
 		v, verr := parseNamedType(gofile, ftpe.Value, sel)
-		if kerr != nil || verr != nil || k.Type != "string" {
+		if kerr != nil ||
+			verr != nil ||
+			(k.Type != "string" && k.Type != "integer") {
+			k, kerr := parseNamedType(gofile, ftpe.Key, sel)
+			_, _ = k, kerr
 			// keys can only be of type string
 			return nil, fmt.Errorf("expr (%s) not yet unsupported", expr)
 		}
@@ -179,10 +183,9 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		return nil, fmt.Errorf("expr (%s) type (%s) is unsupported for a schema", ftpe, expr)
 	}
 }
-*/
-/*
+
 // https://swagger.io/specification/#dataTypes
-func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
+func parseIdentProperty(expr *ast.Ident, sel *ast.Ident) (t, format string, err error) {
 	switch expr.Name {
 	case "string":
 		t = "string"
@@ -210,10 +213,24 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 		t = "string"
 		format = "binary"
 	default:
-		t = expr.Name
+		if nil != sel {
+			name := expr.Name + "." + sel.Name
+			if tp, ok := externalTypesMap[name]; ok {
+				t = tp.Type
+				format = tp.Format
+				break
+			} else if tp, ok := externalTypesMap[sel.Name]; ok {
+				t = tp.Type
+				format = tp.Format
+				break
+			} else if tp, ok := externalTypesMap[expr.Name]; ok {
+				t = tp.Type
+				format = tp.Format
+				break
+			}
+		}
+		//t = expr.Name
 		err = fmt.Errorf("Can't set the type %s", expr.Name)
 	}
 	return t, format, err
 }
-
-*/
