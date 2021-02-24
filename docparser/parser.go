@@ -1,7 +1,6 @@
 package docparser
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -77,7 +76,7 @@ func parseJSONTag(field *ast.Field) (j jsonTagInfo, err error) {
 	}
 	return j, nil
 }
-
+/*
 func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, error) {
 	p := schema{}
 	switch ftpe := expr.(type) {
@@ -180,7 +179,8 @@ func parseNamedType(gofile *ast.File, expr ast.Expr, sel *ast.Ident) (*schema, e
 		return nil, fmt.Errorf("expr (%s) type (%s) is unsupported for a schema", ftpe, expr)
 	}
 }
-
+*/
+/*
 // https://swagger.io/specification/#dataTypes
 func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 	switch expr.Name {
@@ -215,3 +215,5 @@ func parseIdentProperty(expr *ast.Ident) (t, format string, err error) {
 	}
 	return t, format, err
 }
+
+*/
