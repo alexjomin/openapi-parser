@@ -21,12 +21,6 @@ var (
 	regexpInfo    = regexp.MustCompile("@openapi:info\n([^@]*)$")
 	regexpImport  = regexp.MustCompile(`import\(([^\)]+)\)`)
 	tab           = regexp.MustCompile(`\t`)
-
-	registeredSchemas = map[string]interface{}{
-		"AnyValue": map[string]string{
-			"description": "Can be anything: string, number, array, object, etc., including `null`",
-		},
-	}
 )
 
 type openAPI struct {
@@ -38,6 +32,8 @@ type openAPI struct {
 	Components Components
 	Security   []map[string][]string `yaml:"security,omitempty"`
 	XGroupTags []interface{}         `yaml:"x-tagGroups"`
+
+	registeredSchemas map[string]interface{}
 }
 
 type server struct {
@@ -58,7 +54,11 @@ func NewOpenAPI() openAPI {
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
 	spec.Components.Schemas = make(map[string]interface{})
-
+	spec.registeredSchemas = map[string]interface{}{
+		"AnyValue": map[string]string{
+			"description": "Can be anything: string, number, array, object, etc., including `null`",
+		},
+	}
 	return spec
 }
 
@@ -364,21 +364,21 @@ func (spec *openAPI) parsePaths(f *ast.File) (errs []error) {
 	return
 }
 
-func replaceSchemaNameToCustom(s *schema) {
+func (spec *openAPI) replaceSchemaNameToCustom(s *schema) {
 	if s == nil {
 		return
 	}
 
 	for _, property := range s.Properties {
-		replaceSchemaNameToCustom(property)
+		spec.replaceSchemaNameToCustom(property)
 	}
-	replaceSchemaNameToCustom(s.AdditionalProperties)
+	spec.replaceSchemaNameToCustom(s.AdditionalProperties)
 
 	refSplit := strings.Split(s.Ref, "/")
 	if len(refSplit) != 4 {
 		return
 	}
-	if replacementSchema, found := registeredSchemas[refSplit[3]]; found {
+	if replacementSchema, found := spec.registeredSchemas[refSplit[3]]; found {
 		meta, ok := replacementSchema.(metaSchema)
 		if !ok {
 			return
@@ -389,7 +389,7 @@ func replaceSchemaNameToCustom(s *schema) {
 }
 
 func (spec *openAPI) composeSpecSchemas() {
-	for realName, registeredSchema := range registeredSchemas {
+	for realName, registeredSchema := range spec.registeredSchemas {
 		if realName == "AnyValue" {
 			spec.Components.Schemas[realName] = registeredSchema
 			continue
@@ -402,10 +402,10 @@ func (spec *openAPI) composeSpecSchemas() {
 
 		if composed, ok := registeredSchema.(*composedSchema); ok {
 			for _, s := range composed.AllOf {
-				replaceSchemaNameToCustom(s)
+				spec.replaceSchemaNameToCustom(s)
 			}
 		} else if normal, ok := registeredSchema.(*schema); ok {
-			replaceSchemaNameToCustom(normal)
+			spec.replaceSchemaNameToCustom(normal)
 		}
 
 		name := realName
@@ -642,7 +642,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 					if ok && example != nil {
 						s.Example = example
 					}
-					registeredSchemas[realName] = entity
+					spec.registeredSchemas[realName] = entity
 				}
 			}
 		}
