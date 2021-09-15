@@ -670,7 +670,7 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 		content := tab.ReplaceAllString(string(a[1]), "  ")
 
 		// Unmarshal yaml
-		infos := make(map[string]string)
+		infos := info{}
 		err := yaml.Unmarshal([]byte(content), &infos)
 		if err != nil {
 			logrus.
@@ -685,7 +685,7 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 			continue
 		}
 
-		version := infos["version"]
+		version := infos.Version
 		if spec.Info.Version != "" && spec.Info.Version != version {
 			logrus.
 				WithField("version", spec.Info.Version).
@@ -699,7 +699,7 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 			spec.Info.Version = version
 		}
 
-		title := infos["title"]
+		title := infos.Title
 		if spec.Info.Title != "" && spec.Info.Title != title {
 			logrus.
 				WithField("title", spec.Info.Title).
@@ -713,7 +713,7 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 			spec.Info.Title = title
 		}
 
-		description := infos["description"]
+		description := infos.Description
 		if spec.Info.Description != "" && spec.Info.Description != description {
 			logrus.
 				WithField("description", spec.Info.Description).
@@ -746,6 +746,9 @@ func (spec *openAPI) parseInfos(f *ast.File) (errors []error) {
 				spec.Info.Description = string(c)
 			}
 		}
+
+		spec.Info.XLogo = infos.XLogo
+
 	}
 	return
 }
