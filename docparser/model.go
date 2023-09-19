@@ -617,6 +617,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 						})
 						continue
 					}
+					p.SetCustomName(entityName)
 
 					logrus.
 						WithField("name", entityName).
