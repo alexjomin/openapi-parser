@@ -13,52 +13,52 @@ import (
 // @openapi:path
 // /pets:
 //
-//		get:
-//			description: "Returns all pets from the system that the user has access to"
-//			operationId: GetUser
-//			tags:
-//				- pet
-//			responses:
-//				"200":
-//					description: "A list of pets."
-//					content:
-//						application/json:
-//							schema:
-//								type: "array"
-//								items:
-//									$ref: "#/components/schemas/Pet"
-//				"302":
-//					description: "Trip Signals Redirection"
-//					headers:
-//						Location:
-//							description: The url to the signal API
-//							schema:
-//								type: string
-//			parameters:
-//				- in: path
-//				  name: deviceId
-//				  schema:
-//				  	type: integer
-//				  	enum: [3, 4]
-//				  required: true
-//				  description: Numeric ID of the user to get
-//			security:
-//				- petstore_auth:
-//					- write:pets
-//					- read:pets
-//			servers:
-//	       - url: "https://{environment}.hello.com"
-//	         description: "what up"
-//	         variables:
-//	           environment:
-//	             default: api    # Production server
-//	             enum:
-//	               - api         # Production server
-//	               - api.dev     # Development server
-//	               - api.staging # Staging server
-//			externalDocs:
-//				description: External documentation
-//				url: "https://{environment}-docs.hello.com"
+//	get:
+//		description: "Returns all pets from the system that the user has access to"
+//		operationId: GetUser
+//		tags:
+//			- pet
+//		responses:
+//			"200":
+//				description: "A list of pets."
+//				content:
+//					application/json:
+//						schema:
+//							type: "array"
+//							items:
+//								$ref: "#/components/schemas/Pet"
+//			"302":
+//				description: "Trip Signals Redirection"
+//				headers:
+//					Location:
+//						description: The url to the signal API
+//						schema:
+//							type: string
+//		parameters:
+//			- in: path
+//			  name: deviceId
+//			  schema:
+//			  	type: integer
+//			  	enum: [3, 4]
+//			  required: true
+//			  description: Numeric ID of the user to get
+//		security:
+//			- petstore_auth:
+//				- write:pets
+//				- read:pets
+//		servers:
+//        - url: "https://{environment}.hello.com"
+//          description: "what up"
+//          variables:
+//            environment:
+//              default: api    # Production server
+//              enum:
+//                - api         # Production server
+//                - api.dev     # Development server
+//                - api.staging # Staging server
+//		externalDocs:
+//			description: External documentation
+//			url: "https://{environment}-docs.hello.com"
 func GetUser() {}
 
 // PostFoo returns a user corresponding to specified id
