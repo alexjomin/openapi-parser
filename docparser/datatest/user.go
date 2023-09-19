@@ -114,6 +114,7 @@ type Pet struct {
 	StrData             map[string]string         `json:"strData"`
 	Children            map[string]Pet            `json:"children"`
 	IntData             map[string]int            `json:"IntData"`
+	PtrStringMapAlias   *StringMapAlias           `json:"PtrStringMapAlias"`
 	ByteData            []byte                    `json:"ByteData"`
 	JSONData            json.RawMessage           `json:"json_data"`
 	CustomString        otherpackage.CustomString `json:"custom_string"`
@@ -122,6 +123,9 @@ type Pet struct {
 		Field string `json:"field"`
 	} `json:"anonymous"`
 }
+
+// @openapi:schema
+type StringMapAlias map[string]string
 
 // AnonymousArray struct
 // @openapi:schema
