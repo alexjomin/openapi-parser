@@ -12,6 +12,7 @@ import (
 // GetUser returns a user corresponding to specified id
 // @openapi:path
 // /pets:
+//
 //	get:
 //		description: "Returns all pets from the system that the user has access to"
 //		operationId: GetUser
@@ -63,6 +64,7 @@ func GetUser() {}
 // PostFoo returns a user corresponding to specified id
 // @openapi:path
 // /pets:
+//
 //	post:
 //		description: "Returns all pets from the system that the user has access to"
 //		requestBody:
@@ -114,6 +116,7 @@ type Pet struct {
 	StrData             map[string]string         `json:"strData"`
 	Children            map[string]Pet            `json:"children"`
 	IntData             map[string]int            `json:"IntData"`
+	PtrStringMapAlias   *MapStringString          `json:"PtrStringMapAlias"`
 	ByteData            []byte                    `json:"ByteData"`
 	JSONData            json.RawMessage           `json:"json_data"`
 	CustomString        otherpackage.CustomString `json:"custom_string"`

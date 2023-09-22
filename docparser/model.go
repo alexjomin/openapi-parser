@@ -383,7 +383,9 @@ func (spec *openAPI) replaceSchemaNameToCustom(s *schema) {
 		if !ok {
 			return
 		}
-		refSplit[3] = meta.CustomName()
+		if meta.CustomName() != "" {
+			refSplit[3] = meta.CustomName()
+		}
 	}
 	s.Ref = strings.Join(refSplit, "/")
 }
@@ -416,34 +418,20 @@ func (spec *openAPI) composeSpecSchemas() {
 	}
 }
 
-func (spec *openAPI) parseMaps(mp *ast.MapType) (*schema, []error) {
+func (spec *openAPI) parseMaps(f *ast.File, mp *ast.MapType) (*schema, []error) {
 	errors := make([]error, 0)
 
-	// only map[string]
-	if i, ok := mp.Key.(*ast.Ident); ok {
-		t, _, err := parseIdentProperty(i)
-		if err != nil {
-			errors = append(errors, BuildError{
-				Err:     err,
-				Message: "could not parse ident property from map",
-			})
-		}
-
-		if t != "string" {
-			return nil, errors
-		}
+	p, err := parseNamedType(f, mp, nil)
+	if err != nil {
+		logrus.WithError(err).Error("Can't parse the type of field in map")
+		errors = append(errors, BuildError{
+			Err:     err,
+			Message: "can't parse the type of field in map",
+		})
 	}
 
-	e := newEntity()
-	e.Type = "object"
-	e.AdditionalProperties = &schema{}
+	return p, errors
 
-	// map[string]interface{}
-	if _, ok := mp.Value.(*ast.InterfaceType); ok {
-		return &e, errors
-	}
-
-	return nil, errors
 }
 
 func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}, []error) {
@@ -575,7 +563,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) (errors []error) {
 				switch n := ts.Type.(type) {
 				case *ast.MapType:
 					var errs []error
-					entity, errs = spec.parseMaps(n)
+					entity, errs = spec.parseMaps(f, n)
 					if len(errs) != 0 {
 						errors = append(errors, errs...)
 					}
