@@ -17,6 +17,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Pet'
+                minItems: 1
+                maxItems: 100
           description: A list of pets.
         "302":
           content: {}

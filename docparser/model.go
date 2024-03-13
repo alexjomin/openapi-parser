@@ -155,6 +155,8 @@ type schema struct {
 	AdditionalProperties *schema                `yaml:"additionalProperties,omitempty"`
 	OneOf                []schema               `yaml:"oneOf,omitempty"`
 	Example              interface{}            `yaml:"example,omitempty"`
+	MinItems             int64                  `yaml:"minItems,omitempty"`
+	MaxItems             int64                  `yaml:"maxItems,omitempty"`
 }
 
 func (s *schema) RealName() string {

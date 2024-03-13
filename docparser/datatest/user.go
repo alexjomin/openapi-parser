@@ -25,6 +25,8 @@ import (
 //					application/json:
 //						schema:
 //							type: "array"
+//							maxItems: 100
+//							minItems: 1
 //							items:
 //								$ref: "#/components/schemas/Pet"
 //			"302":
