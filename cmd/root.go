@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -31,7 +30,7 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		_ = ioutil.WriteFile(outputPath, d, 0644)
+		_ = os.WriteFile(outputPath, d, 0644)
 	},
 }
 
