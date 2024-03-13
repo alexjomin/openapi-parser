@@ -50,7 +50,7 @@ type serverVariable struct {
 
 func NewOpenAPI() openAPI {
 	spec := openAPI{}
-	spec.Openapi = "3.0.0"
+	spec.Openapi = "3.1.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
 	spec.Components.Schemas = make(map[string]interface{})

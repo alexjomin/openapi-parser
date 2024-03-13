@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   version: 0.0.1
   title: Some cool title
@@ -110,7 +110,10 @@ components:
       properties:
         string:
           type: string
-    MapStringString: null
+    MapStringString:
+      type: object
+      additionalProperties:
+        type: string
     Pet:
       required:
       - string
@@ -123,6 +126,8 @@ components:
           type: object
           additionalProperties:
             type: integer
+        PtrStringMapAlias:
+          $ref: '#/components/schemas/MapStringString'
         anonymous:
           type: object
           properties:
