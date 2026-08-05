@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -474,6 +475,17 @@ func (spec *openAPI) parseStructs(f *ast.File, tpe *ast.StructType) (interface{}
 
 			if len(j.enum) > 0 {
 				p.Enum = j.enum
+			}
+
+			// Only set nullable if the openapi:"nullable" tag is present
+			if p.Nullable != nil {
+				nullable := false
+				if fld.Tag != nil {
+					nullable = reflect.StructTag(fld.Tag.Value).Get("openapi") == "nullable"
+				}
+				if !nullable {
+					p.Nullable = nil
+				}
 			}
 
 			if p != nil {
